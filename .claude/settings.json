@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Edit(./.env)",
+      "Read(./data/**)",
+      "Edit(./data/**)",
+      "Read(./backend/data/**)",
+      "Edit(./backend/data/**)",
+      "Read(~/Library/Messages/**)",
+      "Bash(uv run uvicorn *)",
+      "Bash(uv run python -m ghost.inspect_chat*)",
+      "Bash(sqlite3 *)",
+      "Bash(curl *:8001*)"
+    ]
+  }
+}
