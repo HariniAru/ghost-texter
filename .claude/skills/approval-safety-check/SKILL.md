@@ -38,13 +38,13 @@ grep -rn "/approve\|'approve'" frontend/src --include='*.tsx' --include='*.ts' -
 1. The only route to `messenger.send` is the approve endpoint. Automatic preparation, regeneration, refresh, and startup cannot reach it.
 2. The model has no tools, credentials, or approval authority, and its output never becomes a backend action.
 3. Message text and voice examples stay untrusted data in prompts, never instructions.
-4. No endpoint accepts send text. Approve takes only a version, and the body comes from the stored draft.
+4. No endpoint sends text it is handed. Typed text and edits are only saved. Approve takes only a version, and the body comes from the stored draft.
 
 **What gets approved**
 
 5. Approval binds the saved version, exact recipient, exact body, and conversation fingerprint.
 6. Saving an edit increments the version, and only a pending draft at the exact version can be edited, rejected, or approved.
-7. A new or regenerated draft starts as a fresh pending review and inherits no approval.
+7. A new, typed, or regenerated draft starts as a fresh pending review and inherits no approval.
 8. The UI cannot approve while unsaved edits differ from the saved text. Only **Confirm & send** in the dialog calls approve, and opening the dialog sends nothing.
 
 **Checks before dispatch, in this order**
@@ -58,19 +58,19 @@ grep -rn "/approve\|'approve'" frontend/src --include='*.tsx' --include='*.ts' -
 
 13. Dispatch stays outside graph nodes, so replay cannot resend.
 14. Exactly one send attempt. No retry, loop, or fallback on any path.
-15. Any exception or unrecognized receipt becomes `uncertain`, which cannot be retried. Startup converts leftover `sending` to `uncertain`.
-16. Terminal statuses never change. A duplicate approval returns 409.
+15. Any exception or unrecognized receipt becomes `uncertain`, which is never resent. Startup converts leftover `sending` to `uncertain`. `uncertain` only moves to `sent` when the exact outgoing text is found at or after approval, or to `discarded` by the user's choice. Try again creates a new pending draft that needs its own approval.
+16. `rejected`, `stale`, `sent`, and `discarded` never change. A duplicate approval returns 409.
 
 **Scope and privacy**
 
-17. Reads stay within `GHOST_ALLOWED_RECIPIENTS` in live mode, by exact address. No contact search, fuzzy matching, or enumerating other chats. Expanding this is a future decision the user must make explicitly.
-18. Automatic preparation preserves pending, `sending`, and `uncertain` reviews, and does not regenerate a rejected unchanged snapshot.
+17. Reads stay within the contacts list in live mode (`GHOST_ALLOWED_RECIPIENTS` plus addresses the user added on the dashboard), by exact address. Only the add-contact check may read an address before it is saved, and it must discard the text. No contact search, fuzzy matching, or enumerating other chats. Expanding this to all chats is a future decision the user must make explicitly.
+18. Automatic preparation preserves pending, `sending`, and `uncertain` reviews, and does not redraft a conversation a sent reply already answered. A rejected draft does not block it.
 19. Voice data changes only through explicit save, recipients' examples do not leak into other recipients' drafts, and nothing is learned silently.
 20. Message contents and tokens are not logged. Connector errors stay sanitized, and upstream stderr stays suppressed.
 
 **Draft list and records**
 
-21. Only `sent` drafts leave the saved list. `uncertain` stays visible until the user can act on it.
+21. Only `sent` and `discarded` drafts leave the saved list. `uncertain` stays visible until it is found in Messages or the user acts on it.
 22. Hiding or discarding a draft does not delete approval or dispatch evidence.
 
 **Tests and docs**

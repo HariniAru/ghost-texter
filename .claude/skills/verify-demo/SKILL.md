@@ -15,7 +15,7 @@ From the repo root:
 .claude/skills/verify-demo/scripts/run-demo.sh
 ```
 
-This covers inbox, conversation, draft, deduplication, edit, version conflicts, reopen, reject, a new draft, simulated send, and duplicate approval. Exit codes:
+This covers inbox, conversation, draft, deduplication, edit, version conflicts, reopen, reject, a new draft, and demo Send (which does nothing and leaves the chat unread). Exit codes:
 
 - `0`: the walkthrough passed.
 - `1`: a step failed. Report which one.
@@ -34,7 +34,7 @@ The API check does not cover the UI. For UI changes, also write a browser script
 
 The backend serves `frontend/dist`, so build first or the browser tests stale UI. The script must read `GHOST_DEMO_URL` and `GHOST_DEMO_TOKEN` from its environment, and it must not start a server or connect to any other address.
 
-Walk the acceptance flow from `docs/PROJECT_PLAN.md`: refresh → open conversation → summary → generate → edit and save → leave and reopen → discard → generate an alternative → confirm simulated send. The final button must read **Confirm simulated send**. If it reads **Confirm & send**, stop immediately: that is the live workflow.
+Walk the acceptance flow from `docs/PROJECT_PLAN.md`: refresh → open conversation → summary → generate → edit and save → leave and reopen → discard → generate an alternative → press Send and confirm. The final button must read **Confirm simulated send**, and pressing it must change nothing: the chat stays in the unread inbox. If it reads **Confirm & send**, stop immediately: that is the live workflow.
 
 If no browser tooling is installed, say the UI was not verified. Do not install it without asking.
 

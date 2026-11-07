@@ -2,6 +2,7 @@
 
 import os
 import re
+from datetime import datetime
 from typing import Protocol
 
 from mcp import ClientSession, StdioServerParameters
@@ -11,6 +12,13 @@ from pydantic import BaseModel
 
 class MessagingError(RuntimeError):
     """Safe, actionable connector error; never includes private tool output."""
+
+
+NO_CHAT = re.compile(r"No (?:group )?chat found|No messages found in the specified time period\.")
+
+
+class ChatNotFound(MessagingError):
+    """The connector looked for this exact chat and has no messages for it."""
 
 
 def normalize_transcript(text):
@@ -28,6 +36,48 @@ class Conversation(BaseModel):
 
 MESSAGE_ROW = re.compile(r"(?m)^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\].*$")
 
+# The connector's paging note, appended to the oldest row when the limit is reached.
+PAGING_NOTE = re.compile(
+    r"(?:\\n|\n)\(Showing \d+ message\(s\) from offset \d+; older messages may exist"
+    r" - call again with offset=\d+\.\)"
+)
+# Time, sender, then tags such as [iMessage] or [tapback: loved], which can contain ": " themselves.
+ROW_HEAD = re.compile(r"(\[[^\]]+\] .*?(?: \[[^\]]*\])*): ")
+TAPBACK_TAG = re.compile(r"\[tapback:[^\]]*\]")
+# A trailing attachment list, the inline image placeholder, and attachment- or reaction-only bodies.
+ATTACHMENT_NOISE = re.compile(
+    r"\s*\[attachments: .*\]$|\ufffc|^\s*(?:\[attachment\]|\(reaction\))\s*$"
+)
+
+
+def text_only(transcript):
+    """Keep only text messages: drop reactions, attachment-only rows, and the paging note."""
+    lines = []
+    for line in PAGING_NOTE.sub("", transcript).split("\n"):
+        if MESSAGE_ROW.match(line):
+            head = ROW_HEAD.match(line)
+            body = ATTACHMENT_NOISE.sub("", line[head.end() :]).strip() if head else ""
+            if not body or TAPBACK_TAG.search(head[1]):
+                continue
+            line = head[0] + body
+        lines.append(line)
+    return "\n".join(lines)
+
+
+OUTGOING_ROW = re.compile(
+    r"(?m)^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] You(?: \[[^\]]*\])*: (.*)$"
+)
+
+
+def sent_since(context, text, since):
+    # Exact outgoing text at or after `since`, so an older identical text is not proof.
+    # The connector writes line breaks and tabs in a body as literal \n and \t.
+    wanted = re.sub(r"\r\n|\r|\n", r"\\n", text).replace("\t", r"\t").strip()
+    return any(
+        body.strip() == wanted and datetime.strptime(sent, "%Y-%m-%d %H:%M:%S") >= since
+        for sent, body in OUTGOING_ROW.findall(context)
+    )
+
 
 class Messenger(Protocol):
     async def unread(self, recipients: list[str]) -> list[Conversation]: ...
@@ -35,15 +85,27 @@ class Messenger(Protocol):
     async def send(self, recipient: str, text: str) -> str: ...
 
 
+def unread_tail(history):
+    # A demo chat's unread messages are the other person's messages after your last reply.
+    lines = history.splitlines()
+    mine = [i for i, line in enumerate(lines) if line.startswith("You:")]
+    return lines[mine[-1] + 1 :] if mine else lines
+
+
 class DemoMessenger:
     def __init__(self):
         self.history = {
             "alex@example.test": "You: hey! how has your week been?\nAlex: pretty good! coffee tomorrow at 10?",
             "maya@example.test": "You: send me the photos when you can :)\nMaya: just sent them! how was the trip?",
+            # Banter, for testing a per-person voice that differs from the default.
+            "jordan@example.test": "Jordan: bro you still owe me $20 from pizza\nYou: lol i paid you back\n"
+            "Jordan: you did NOT\nJordan: also are you coming to mom's on sunday or not",
+            # Several unread messages, with a question that needs a real answer.
+            "priya@example.test": "You: thanks again for helping me move!\nPriya: of course! my turn next month haha\n"
+            "Priya: btw are you free saturday afternoon? need a second opinion on apartments\n"
+            "Priya: around 2pm if that works",
         }
-        self.unread_messages = {
-            r: [history.splitlines()[-1]] for r, history in self.history.items()
-        }
+        self.unread_messages = {r: unread_tail(h) for r, h in self.history.items()}
         self.sent = []
 
     async def unread(self, recipients):
@@ -103,17 +165,18 @@ class MacMessages:
                     "unread_only": True,
                 },
             )
-            rows = MESSAGE_ROW.findall(result)
+            # Reactions and attachment-only messages do not make a chat unread here.
+            rows = MESSAGE_ROW.findall(text_only(result))
             if rows:
                 conversations.append(
                     Conversation(
                         recipient=recipient,
                         preview=rows[0],
                         unread_count=len(rows),
-                        count_capped=len(rows) == 50,
+                        count_capped=len(MESSAGE_ROW.findall(result)) == 50,
                     )
                 )
-            elif "No messages found in the specified time period." not in result:
+            elif not NO_CHAT.search(result):
                 # Empty and permission/schema errors must not look like a quiet inbox.
                 raise MessagingError(
                     "Unable to read unread messages. Check Full Disk Access and the exact configured chat address."
@@ -134,10 +197,11 @@ class MacMessages:
         # Exact chat scope includes outgoing context and avoids mixing group messages
         # from a contact. Refuse unknown/empty/error prose instead of drafting from it.
         if not re.search(r"(?m)^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]", result):
-            raise MessagingError(
+            error = ChatNotFound if NO_CHAT.search(result) else MessagingError
+            raise error(
                 "No readable history returned for this chat on this Mac. Check the exact phone number/email and local Messages sync."
             )
-        return result
+        return text_only(result)
 
     async def send(self, recipient, text):
         result = await self.call("tool_send_message", {"recipient": recipient, "message": text})

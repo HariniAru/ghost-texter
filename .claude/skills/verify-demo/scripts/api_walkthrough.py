@@ -2,7 +2,7 @@
 
 Started by run-demo.sh, which supplies GHOST_DEMO_URL and GHOST_DEMO_TOKEN.
 Every request that changes state happens after guard() confirms a demo server.
-Simulated sends only. Standard library only.
+Demo Send does nothing, so no message is ever sent. Standard library only.
 """
 
 import json
@@ -120,15 +120,34 @@ def walkthrough(recipients):
 
     code, sent = call("POST", f"/api/drafts/{second['id']}/approve", {"version": 2})
     expect(
-        "confirming records a simulated send of the exact saved text",
+        "demo Send does nothing: the draft stays pending with its exact saved text",
         code == 200
-        and sent["status"] == "sent"
+        and sent["status"] == "pending"
         and sent["text"] == "synthetic edit two"
-        and "Simulated" in sent["receipt"],
+        and not sent.get("receipt"),
     )
 
-    code, _ = call("POST", f"/api/drafts/{second['id']}/approve", {"version": 2})
-    expect("a duplicate approval is refused", code == 409)
+    code, again = call("POST", f"/api/drafts/{second['id']}/approve", {"version": 2})
+    expect("repeating demo Send changes nothing", code == 200 and again["status"] == "pending")
+
+    code, rows = call("GET", "/api/drafts")
+    ids = [row["id"] for row in rows] if code == 200 else []
+    expect("the draft stays in the saved list", code == 200 and second["id"] in ids)
+    expect("the rejected draft stays in the saved list", first["id"] in ids)
+
+    code, inbox = call("GET", "/api/inbox")
+    expect(
+        "the chat stays in the unread inbox",
+        code == 200 and recipient in [row["recipient"] for row in inbox],
+    )
+
+    code, contacts = call("GET", "/api/contacts")
+    expect(
+        "demo contacts are the synthetic recipients",
+        code == 200 and {row["source"] for row in contacts} == {"demo"},
+    )
+    code, _ = call("POST", "/api/contacts", {"name": "Sam", "number": "+14155550123"})
+    expect("demo mode refuses to store an added contact", code == 403)
 
 
 def main():
@@ -143,7 +162,7 @@ def main():
     except (urllib.error.URLError, TimeoutError, KeyError, TypeError, ValueError) as exc:
         print(f"FAIL could not complete the walkthrough: {type(exc).__name__}", file=sys.stderr)
         return 1
-    print("PASS API walkthrough complete. All sends were simulated.")
+    print("PASS API walkthrough complete. Demo Send did nothing, as intended.")
     return 0
 
 

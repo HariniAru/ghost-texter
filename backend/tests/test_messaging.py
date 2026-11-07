@@ -113,3 +113,50 @@ def test_old_connector_schema_is_rejected_before_calling_tool(monkeypatch):
     with pytest.raises(MessagingError, match="incompatible"):
         asyncio.run(MacMessages(Settings(_env_file=None)).read("+14155550123"))
     session.call_tool.assert_not_called()
+
+
+NOISY = (
+    "<untrusted-mcp-output>\n"
+    "[2026-10-17 10:05:00] You [iMessage] [tapback: loved]: Loved an image\n"
+    "[2026-10-17 10:04:00] Sam [iMessage] [unread]: ￼ [attachments: #26129 image/heic (IMG_1.heic)]\n"
+    "[2026-10-17 10:03:00] Sam [iMessage] [unread]: [attachment]\n"
+    "[2026-10-17 10:02:00] Sam [iMessage] [unread]: look at this ￼ [attachments: #2 image/png (a.png)]\n"
+    "[2026-10-17 10:01:00] You [iMessage]: that was so funny\\nseriously"
+    "\\n(Showing 50 message(s) from offset 0; older messages may exist - call again with offset=50.)\n"
+    "</untrusted-mcp-output>"
+)
+
+
+def test_read_keeps_only_text_messages():
+    adapter = MacMessages(Settings(_env_file=None))
+
+    async def call(*args):
+        return NOISY
+
+    adapter.call = call
+    result = asyncio.run(adapter.read("+14155550123"))
+    assert result == (
+        "<untrusted-mcp-output>\n"
+        "[2026-10-17 10:02:00] Sam [iMessage] [unread]: look at this\n"
+        "[2026-10-17 10:01:00] You [iMessage]: that was so funny\\nseriously\n"
+        "</untrusted-mcp-output>"
+    )
+
+
+def test_reactions_and_attachments_do_not_count_as_unread():
+    adapter = MacMessages(Settings(_env_file=None))
+
+    async def call(*args):
+        return NOISY
+
+    adapter.call = call
+    [chat] = asyncio.run(adapter.unread(["+14155550123"]))
+    assert chat.unread_count == 2
+    assert chat.preview.endswith("look at this")
+
+    async def only_reaction(*args):
+        return "[2026-10-17 10:05:00] Sam [iMessage] [unread] [tapback: laughed]: Laughed at “ok”"
+
+    adapter.call = only_reaction
+    with pytest.raises(RuntimeError):
+        asyncio.run(adapter.unread(["+14155550123"]))

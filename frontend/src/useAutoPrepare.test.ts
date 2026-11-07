@@ -41,3 +41,28 @@ it('ignores late responses after disconnect',async()=>{
  expect(receive).not.toHaveBeenCalled();
  expect(result.current.enabled).toBe(false);
 });
+it('looks at every unread chat again each time it is turned on',async()=>{
+ const prepare=vi.fn().mockResolvedValue('draft'),receive=vi.fn();
+ const {result}=renderHook(()=>useAutoPrepare(items,true,false,prepare,receive));
+ act(()=>result.current.setEnabled(true));
+ await act(async()=>{});
+ expect(prepare).toHaveBeenCalledTimes(2);
+ act(()=>result.current.setEnabled(false));
+ await act(async()=>{});
+ expect(prepare).toHaveBeenCalledTimes(2);
+ act(()=>result.current.setEnabled(true));
+ await act(async()=>{});
+ expect(prepare).toHaveBeenCalledTimes(4);
+});
+it('clears an earlier failure when it is turned back on',async()=>{
+ const prepare=vi.fn().mockRejectedValueOnce(new Error('Model unavailable')).mockResolvedValue('draft'),receive=vi.fn();
+ const {result}=renderHook(()=>useAutoPrepare(items.slice(0,1),true,false,prepare,receive));
+ act(()=>result.current.setEnabled(true));
+ await act(async()=>{});
+ expect(result.current.error).toBe('Model unavailable');
+ act(()=>result.current.setEnabled(false));
+ act(()=>result.current.setEnabled(true));
+ await act(async()=>{});
+ expect(result.current.error).toBe('');
+ expect(receive).toHaveBeenCalledWith('draft');
+});

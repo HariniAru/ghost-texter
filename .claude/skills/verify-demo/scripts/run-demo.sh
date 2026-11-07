@@ -52,7 +52,6 @@ trap cleanup EXIT
     GHOST_ALLOWED_RECIPIENTS='[]' \
     GHOST_DATA_DIR="$WORKDIR/data" \
     GHOST_API_TOKEN="$TOKEN" \
-    OPENAI_API_KEY= \
     "$PYTHON" -m uvicorn ghost.main:create_app --factory \
       --host 127.0.0.1 --port "$PORT" --log-level warning
 ) >"$WORKDIR/server.log" 2>&1 &

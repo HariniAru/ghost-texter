@@ -8,3 +8,6 @@ data/
 node_modules/
 frontend/dist/
 .DS_Store
+
+# Impeccable skill ships a font index under scripts/data/. This is not app data.
+!.claude/skills/impeccable/scripts/data/

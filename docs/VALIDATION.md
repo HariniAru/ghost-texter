@@ -20,9 +20,9 @@ After duplicate-thread correction, one configured recipient changed from 2019 hi
 
 Follow-up verification in Messages.app identified the remaining January-history mismatch: the visible current conversation uses an Apple ID email, while the tested CLI argument was a phone number. The same contact name can label separate address identities. Do not automatically add contact aliases to the allowlist; configure the actual email explicitly when the user wants that thread. No private email or message body is recorded in this document.
 
-AI activation checks: the synthetic smoke-test command exercises structured summary and draft generation and verifies a LangGraph approval pause using a fake model in tests. Missing-key errors reach API callers without network access or sending. Actual paid-model execution remains unverified until a local OPENAI_API_KEY is configured.
+AI activation checks: the synthetic smoke-test command exercises structured summary and draft generation and verifies a LangGraph approval pause using a fake model in tests. Model configuration errors reach API callers without sending.
 
-Local Ollama tests cover provider selection without OpenAI credentials, schema/JSON validation, loopback-only URLs, rejection of cloud aliases, disabled thinking, requests without credentials/tools, and missing-model errors.
+Local Ollama tests cover schema/JSON validation, loopback-only URLs, rejection of cloud aliases, disabled thinking, requests without credentials/tools, and missing-model errors.
 
 Real local smoke test passed with qwen3:4b: a factual coffee-invitation summary and a short timing question were generated from synthetic messages, then the graph paused for approval. Initial instruction echo was corrected by schema grounding and a clearer summary prompt. Ollama reported 100% GPU use, 8192-token context, and about 3.8 GB model memory. This is a functional smoke test, not a comprehensive quality evaluation.
 

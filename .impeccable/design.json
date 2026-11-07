@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T06:55:46Z",
+  "title": "Design System: Ghost Texter",
+  "extensions": {
+    "colorMeta": {
+      "fern-ink": {
+        "role": "primary",
+        "displayName": "Fern Ink",
+        "canonical": "#264e3d",
+        "tonalRamp": [
+          "#050d09",
+          "#122b20",
+          "#234b3a",
+          "#436b59",
+          "#648d7a",
+          "#8aaf9d",
+          "#b9cfc4",
+          "#e9f0ed"
+        ]
+      },
+      "desk-ink": {
+        "role": "neutral",
+        "displayName": "Desk Ink",
+        "canonical": "#243b33",
+        "tonalRamp": [
+          "#070d0a",
+          "#1a2923",
+          "#30483f",
+          "#4f675e",
+          "#70897f",
+          "#94aba2",
+          "#bfcdc7",
+          "#ebf0ee"
+        ]
+      },
+      "morning-page": {
+        "role": "neutral",
+        "displayName": "Morning Page",
+        "canonical": "#f6f7f2",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#252523",
+          "#42423e",
+          "#61625d",
+          "#82837e",
+          "#a5a5a1",
+          "#c9c9c7",
+          "#eeeeee"
+        ]
+      },
+      "morning-sidebar": {
+        "role": "neutral",
+        "displayName": "Morning Sidebar",
+        "canonical": "#edf0e7",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#242621",
+          "#41433c",
+          "#60625b",
+          "#81847b",
+          "#a4a69f",
+          "#c8cac5",
+          "#eeefed"
+        ]
+      },
+      "morning-card": {
+        "role": "neutral",
+        "displayName": "Morning Card",
+        "canonical": "#fffefa",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#262523",
+          "#43423f",
+          "#62615e",
+          "#83827f",
+          "#a6a5a2",
+          "#c9c9c7",
+          "#eeeeee"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "sage-line": {
+        "role": "neutral",
+        "displayName": "Sage Line",
+        "canonical": "#e0e5dc",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#232621",
+          "#40443c",
+          "#5f635b",
+          "#80847c",
+          "#a2a79f",
+          "#c7cac5",
+          "#eeefed"
+        ]
+      },
+      "sage-field": {
+        "role": "neutral",
+        "displayName": "Sage Field",
+        "canonical": "#dce2d9",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#232622",
+          "#3f443c",
+          "#5e635b",
+          "#7f847c",
+          "#a2a79f",
+          "#c7cac6",
+          "#eeefed"
+        ]
+      },
+      "sage-tint": {
+        "role": "neutral",
+        "displayName": "Sage Tint",
+        "canonical": "#dce5d4",
+        "tonalRamp": [
+          "#0a0c08",
+          "#22271e",
+          "#3e4537",
+          "#5d6456",
+          "#7d8676",
+          "#a0a89a",
+          "#c6cbc2",
+          "#edefec"
+        ]
+      },
+      "leaf-text": {
+        "role": "neutral",
+        "displayName": "Leaf Text",
+        "canonical": "#305638",
+        "tonalRamp": [
+          "#050e07",
+          "#142b19",
+          "#264c2e",
+          "#456c4d",
+          "#668e6d",
+          "#8bb091",
+          "#bad0bd",
+          "#eaf1eb"
+        ]
+      },
+      "sage-text": {
+        "role": "neutral",
+        "displayName": "Sage Text",
+        "canonical": "#5d6b59",
+        "tonalRamp": [
+          "#090c08",
+          "#20281d",
+          "#394636",
+          "#586654",
+          "#798775",
+          "#9caa98",
+          "#c4ccc1",
+          "#edefec"
+        ]
+      },
+      "field-edge": {
+        "role": "neutral",
+        "displayName": "Field Edge",
+        "canonical": "#869580",
+        "tonalRamp": [
+          "#090c08",
+          "#20281c",
+          "#394734",
+          "#586652",
+          "#798873",
+          "#9caa97",
+          "#c4ccc0",
+          "#edefec"
+        ]
+      },
+      "badge-wash": {
+        "role": "neutral",
+        "displayName": "Badge Wash",
+        "canonical": "#e9eee3",
+        "tonalRamp": [
+          "#0b0c09",
+          "#242621",
+          "#40443b",
+          "#5f635a",
+          "#80847a",
+          "#a3a79e",
+          "#c8cac4",
+          "#eeefed"
+        ]
+      },
+      "focus-leaf": {
+        "role": "neutral",
+        "displayName": "Focus Leaf",
+        "canonical": "#7c9c74",
+        "tonalRamp": [
+          "#070d05",
+          "#192a14",
+          "#2e4b27",
+          "#4d6b45",
+          "#6d8d65",
+          "#92af8a",
+          "#becfb9",
+          "#ebf0e9"
+        ]
+      },
+      "clay-error": {
+        "role": "status",
+        "displayName": "Clay Error",
+        "canonical": "#a14f3e",
+        "tonalRamp": [
+          "#180503",
+          "#431309",
+          "#722415",
+          "#964535",
+          "#bc6755",
+          "#dc8d7c",
+          "#edbcb1",
+          "#faeae7"
+        ]
+      },
+      "clay-wash": {
+        "role": "status",
+        "displayName": "Clay Wash",
+        "canonical": "#fff0e9",
+        "tonalRamp": [
+          "#0d0a09",
+          "#2b2320",
+          "#4b3f3a",
+          "#6b5e58",
+          "#8c7f79",
+          "#afa29c",
+          "#cfc7c4",
+          "#f0eeed"
+        ]
+      },
+      "receipt-wash": {
+        "role": "status",
+        "displayName": "Receipt Wash",
+        "canonical": "#e9f2e3",
+        "tonalRamp": [
+          "#0a0c09",
+          "#22271f",
+          "#3e4539",
+          "#5c6457",
+          "#7d8578",
+          "#a0a89b",
+          "#c6cbc3",
+          "#edefec"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The g. brand mark and login heading."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The page heading in the main header."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Paragraphs and interface text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Capitalised eyebrow labels."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "spinner-spin",
+        "value": "spin .7s linear infinite",
+        "purpose": "The only animation: a small spinner on the control or area that is loading. Slows to 2s under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "tablet",
+        "value": "1000px"
+      },
+      {
+        "name": "phone",
+        "value": "650px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default button. Solid Fern Ink for actions that move work forward.",
+      "html": "<button class=\"ds-btn-primary\">Send</button>",
+      "css": ".ds-btn-primary{font:600 16px 'DM Sans',sans-serif;cursor:pointer;border:0;border-radius:9px;padding:12px 18px;background:#264e3d;color:#fff}.ds-btn-primary:hover{filter:brightness(.94)}.ds-btn-primary:focus-visible{outline:2px solid #7c9c74;outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Tonal button for demoted actions such as Clear or Back to editing.",
+      "html": "<button class=\"ds-btn-secondary\">Clear</button>",
+      "css": ".ds-btn-secondary{font:600 16px 'DM Sans',sans-serif;cursor:pointer;border:0;border-radius:9px;padding:12px 18px;background:#edf0e7;color:#5d6b59}.ds-btn-secondary:hover{filter:brightness(.94)}.ds-btn-secondary:focus-visible{outline:2px solid #7c9c74;outline-offset:2px}"
+    },
+    {
+      "name": "Drafting Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary button while a draft is being written: stays opaque with an inline spinner.",
+      "html": "<button class=\"ds-btn-drafting\" disabled aria-busy=\"true\"><span class=\"ds-spinner\"></span>Drafting…</button>",
+      "css": ".ds-btn-drafting{font:600 16px 'DM Sans',sans-serif;cursor:progress;border:0;border-radius:9px;padding:12px 18px;background:#edf0e7;color:#5d6b59}.ds-spinner{display:inline-block;width:11px;height:11px;margin-right:8px;vertical-align:-1px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:ds-spin .7s linear infinite}@keyframes ds-spin{to{transform:rotate(360deg)}}"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Sidebar item with a count chip. Active state fills with Sage Tint.",
+      "html": "<button class=\"ds-nav ds-nav-active\">↗ Inbox <b>3</b></button>",
+      "css": ".ds-nav{display:flex;justify-content:space-between;align-items:center;width:200px;text-align:left;border:0;border-radius:9px;padding:12px 18px;font:600 13px 'DM Sans',sans-serif;background:transparent;color:#5d6b59;cursor:pointer}.ds-nav b{font-size:11px;background:#fff7;padding:3px 6px;border-radius:4px}.ds-nav-active{background:#dce5d4;color:#305638}.ds-nav:hover{filter:brightness(.97)}.ds-nav:focus-visible{outline:2px solid #7c9c74}"
+    },
+    {
+      "name": "Conversation Row",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "A chat in the inbox list: initial avatar, name, two-line preview and a state line with a dot. The selected row has a Sage Tint fill and a 2px Fern Ink ring.",
+      "html": "<button class=\"ds-row ds-row-selected\" aria-current=\"true\"><span class=\"ds-avatar\">A</span><span class=\"ds-row-text\"><strong>Alex</strong><span class=\"ds-preview\">Alex: pretty good! coffee tomorrow at 10?</span><small data-tone=\"ready\">1 unread · Draft saved</small></span></button>",
+      "css": ".ds-row{display:flex;gap:12px;width:320px;text-align:left;border:0;border-bottom:1px solid #edf0e8;border-radius:9px;padding:18px 10px;background:transparent;color:#344a39;cursor:pointer;font-family:'DM Sans',sans-serif}.ds-row:hover{background:#f3f5ee}.ds-row-selected{background:#dce5d4;outline:2px solid #264e3d;outline-offset:-2px}.ds-row:focus-visible{outline:2px solid #7c9c74;outline-offset:2px}.ds-avatar{background:#e5eadb;border-radius:50%;width:35px;height:35px;display:grid;place-items:center;flex-shrink:0;color:#4d5d49;font-weight:600}.ds-row-selected .ds-avatar{background:#fffefa}.ds-row-text{min-width:0}.ds-row strong{font-size:14px;font-weight:600;color:#243b33;display:block}.ds-preview{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;color:#5d6b59;font-size:13px;line-height:1.5;margin-top:4px}.ds-row small{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#5d6b59;margin-top:8px}.ds-row small::before{content:'';width:8px;height:8px;border-radius:50%;background:#5d6b59;flex-shrink:0}.ds-row small[data-tone=ready]::before{background:#264e3d}.ds-row small[data-tone=alert]::before{background:#a14f3e}.ds-row-selected .ds-preview,.ds-row-selected small{color:#4d5d49}"
+    },
+    {
+      "name": "Reply Box",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The always-present reply textarea.",
+      "html": "<textarea class=\"ds-reply\" placeholder=\"Write your reply, or click Draft a reply.\"></textarea>",
+      "css": ".ds-reply{width:320px;min-height:145px;resize:vertical;line-height:1.7;font:16px 'DM Sans',sans-serif;border:1px solid #869580;border-radius:8px;background:#fff;padding:12px;color:#243b33}.ds-reply:focus{outline:2px solid #7c9c74}.ds-reply:disabled{opacity:.6}"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Pill for status and mode.",
+      "html": "<span class=\"ds-badge\">AI drafts · demo</span>",
+      "css": ".ds-badge{display:inline-block;font:10px 'DM Sans',sans-serif;background:#e9eee3;color:#5d6b59;padding:8px 11px;border-radius:20px;white-space:nowrap}"
+    },
+    {
+      "name": "Error Callout",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Inline error, shown next to the control that caused it.",
+      "html": "<p class=\"ds-error\" role=\"alert\">Failed to generate a response draft. Try again.</p>",
+      "css": ".ds-error{margin:0;background:#fff0e9;color:#a14f3e;padding:14px;border-radius:8px;font:12px/1.65 'DM Sans',sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Desk",
+    "overview": "Ghost Texter looks like a tidy desk where a backlog gets cleared calmly. Surfaces are pale, sage-tinted paper (Morning Desk), text is a deep green-black, and a single ink color (Fern Ink) marks the actions that move work forward. Nothing glows, drops a shadow or animates for show. It is calm, soft, plain and careful: calm in its low-contrast surfaces and generous space, soft in its rounded corners, plain in its lack of ornament, and careful in how clearly it separates drafting from sending.\n\nThe product is a single-user tool for catching up on iMessages and approving every reply, so the interface stays out of the way. Structure comes from a fixed sidebar, hairline borders and tonal steps between page, sidebar and card. The one place the design slows the user down on purpose is the send confirmation, which is a plain modal over a dim green-black backdrop.\n\nThe look is not a glossy gradient SaaS dashboard, not a dark neon or cyber interface, and not a chat-bubble clone of a messaging app. These are confirmed rejections.",
+    "keyCharacteristics": [
+      "Flat surfaces: no shadows anywhere; depth comes from tonal steps and 1px sage borders.",
+      "One accent: Fern Ink solid fills for forward actions, tonal sage for everything demoted.",
+      "Soft geometry: 8px to 15px corner radii on everything, pill-shaped badges, round avatars.",
+      "Small, quiet type: most interface text is 9px to 14px, with Manrope reserved for the brand and headings.",
+      "Progress shows in place: a small spinner on the control or area that is loading, never across the page."
+    ],
+    "rules": [
+      {
+        "name": "The Quiet Fill Rule",
+        "body": "Solid Fern Ink marks actions that move work forward. Actions that undo or step back (Clear, Back to editing, Discard draft) use the tonal secondary style.",
+        "section": "colors"
+      },
+      {
+        "name": "The AA Floor Rule",
+        "body": "Secondary text is Sage Text (#5d6b59) or darker, never paler. Every text pair in the inbox is at least 4.5:1, and field borders are at least 3:1. The old pale tints (#8c9783, #8e9b81, #9aa48e, #7c897b, #7b856e, #738077) were retired because they measured 2.6 to 4.1:1.",
+        "section": "colors"
+      },
+      {
+        "name": "The Small and Soft Rule",
+        "body": "Interface text is small and low in weight contrast. Size and color separate levels, not heavy weights, which are reserved for buttons (600), headings and the brand.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Surfaces are separated by tone and a 1px sage border, never by a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep surfaces flat and separate them with tone and a 1px Sage Line border.",
+      "**Do** use solid Fern Ink only for actions that move work forward, and the tonal secondary style for demoted actions.",
+      "**Do** keep the reply card in view next to the messages it answers; scroll the history, not the reply.",
+      "**Do** show progress where the work is: a small spinner on the control or area that is loading.",
+      "**Do** keep the send confirmation as the only path to a real send, with the exact recipient and text visible.",
+      "**Do** keep text at 4.5:1 or better against its background and field borders at 3:1.",
+      "**Do** make the selected conversation unmistakable: Sage Tint fill, 2px Fern Ink ring and `aria-current`.",
+      "**Do** load or bundle the fonts the stylesheet names, or choose a pair that actually ships."
+    ],
+    "donts": [
+      "**Don't** add box shadows, glows or gradients.",
+      "**Don't** drift toward a glossy gradient SaaS dashboard, a dark neon or cyber look, or a chat-bubble clone of a messaging app.",
+      "**Don't** dim or disable the whole page for a task that affects one control.",
+      "**Don't** introduce a text color paler than Sage Text, or bring back the retired pale tints.",
+      "**Don't** use heavy weights for emphasis in body text; use size and color."
+    ]
+  }
+}

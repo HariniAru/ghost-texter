@@ -1,0 +1,172 @@
+# Development guide
+
+Developer notes for running, restarting and checking Ghost Texter. The project overview is in the [README](../README.md).
+
+Ghost Texter is a local personal messaging assistant that drafts replies in your voice and waits for you to edit, approve, or reject each one. Python + FastAPI + LangGraph, React + TypeScript, lightweight local SQLite persistence, Ollama, and a Mac Messages MCP adapter. No database server or cloud model is required.
+
+The default workspace uses synthetic conversations and canned replies. It never accesses Messages or sends a real text. Enable a local Ollama model for personalized drafts; enable the iMessage adapter separately.
+
+## Run locally
+
+Requires Python 3.10+, uv, and Node 22.
+
+```sh
+cp .env.example .env
+uv sync --extra dev
+cd frontend
+npm ci
+npm run build
+cd ..
+uv run uvicorn ghost.main:create_app --factory --host 127.0.0.1 --port 8001
+```
+
+Open http://127.0.0.1:8001. Run `cat data/api-token` from the repository root and copy the output into the login screen. The **Inbox** shows synthetic unread conversations, plus any chat with a saved draft. Select one to see recent messages and an excerpt (or an AI summary when enabled), then type in the **Your reply** box or click **Draft a reply** to fill it. **Refresh inbox** checks for unread changes without replacing your selected conversation or draft. Enable **Auto-refresh every 30 seconds** to keep the list current while the dashboard is open; it defaults to off and shows the last successful update and any connection error. Select a conversation again to reload its messages and summary, and to return to its saved draft. If new messages arrive after you draft, the inbox warns you, and **Use latest messages** keeps your text and moves the draft onto them. Use **People** to add style preferences and messages you wrote. **Send** saves your reply and opens a final confirmation. Demo approvals simulate sends. Live replies use **Confirm & send**; see the first-send walkthrough.
+
+For development, run `npm run dev` inside frontend in a second terminal; open http://127.0.0.1:5173. The Vite server proxies API calls to port 8001.
+
+Run only one backend worker/process. This is a single-user local application; do not expose it to the network.
+
+## Restart the backend
+
+Restart the backend after changing `.env` or backend code:
+
+1. In the terminal running the backend, press **Ctrl+C** and wait for shutdown to complete.
+2. Start it again from the repository root:
+
+   ```sh
+   cd <path to your ghost-texter checkout>
+   uv run uvicorn ghost.main:create_app --factory --host 127.0.0.1 --port 8001
+   ```
+
+3. Leave that terminal running and refresh the browser. If the frontend development server is already running, keep using http://127.0.0.1:5173.
+
+If you see **address already in use**, another process is still using port 8001. Closing a terminal may leave it running. Find it:
+
+```sh
+lsof -nP -iTCP:8001 -sTCP:LISTEN
+```
+
+Check that it is the backend, then stop its PID (replace `12345` with the actual PID):
+
+```sh
+kill -TERM 12345
+```
+
+Run `lsof` again to confirm the port is free, then restart using the command above.
+
+The commands under **Verify** run tests, lint checks, and a frontend build; they do not restart the backend. You do not need to rerun the first-time setup or copy `.env.example` over your existing `.env` to restart.
+
+## Inspect a chat from the backend
+
+With one allowlisted recipient configured in `.env`, run from the repo root:
+
+```sh
+uv run python -m ghost.inspect_chat
+```
+
+This prints the latest unread incoming message without starting the UI or sending anything. Use `--recipient "+14155550123"` to select an allowlisted recipient, or `--latest` to inspect the latest message regardless of read status. See [setup](SETUP.md) for details.
+
+## Test local AI summaries and drafts
+
+See [Ollama setup](OLLAMA.md). With Ollama running and `qwen3:4b` downloaded, set:
+
+```dotenv
+GHOST_MODEL=qwen3:4b
+GHOST_OLLAMA_URL=http://127.0.0.1:11434
+GHOST_LLM=true
+GHOST_SEND_ENABLED=false
+```
+
+Run `uv run python -m ghost.check_ai` to test synthetic summaries and drafts locally, without API credits or Messages access. Restart the backend to use the local model in the dashboard.
+
+## Project references
+
+- [Setup and live iMessage configuration](SETUP.md)
+- [Architecture](ARCHITECTURE.md)
+- [First approved-send walkthrough](FIRST_SEND.md)
+- [Approval and dispatch contract](APPROVAL_CONTRACT.md)
+- [API](API.md)
+- [Privacy and data](PRIVACY.md)
+- [Project plan and remaining work](PROJECT_PLAN.md)
+- [Research and baseline projects](SOURCES.md)
+- [Validation results](VALIDATION.md)
+- [Minimal MVP scope and user flow](PROJECT_FLOW.md)
+- [Contributor instructions](../AGENTS.md)
+
+## Verify
+
+Run these from the repository root to check the code. These checks do not start or restart either server.
+
+```sh
+uv run pytest
+uv run ruff check backend
+cd frontend
+npm test
+npm run build
+```
+
+### Prepare replies automatically
+
+After connecting, enable **Prepare drafts automatically** in the Inbox to prepare saved replies for configured unread conversations, one at a time. Enable **Auto-refresh every 30 seconds** as well to discover unread changes while the dashboard is open. Both options default to off. New replies show **Draft saved**; open one to edit, approve, or reject normally. Existing pending drafts are preserved, and rejected unchanged conversations are skipped. Model failures pause preparation until **Retry preparation**. Turning preparation off stops new work; an in-progress draft may still finish. No text is sent automatically. Restart the backend after updating to this version, then refresh the dashboard.
+
+## Focused MVP scope
+
+The target is allowlisted messages → recent-window summary → editable reply → explicit approval → send, with manual/automatic inbox refresh and optional automatic drafting **per chat**. See [the agreed flow](PROJECT_FLOW.md).
+
+One refinement remains: automatic preparation currently uses one global toggle. **Draft a reply** avoids the drafts you already discarded for the same messages, until new messages arrive or you send. **Clear** empties the reply box and hides the draft from the inbox; it does not erase local records. See [the implementation plan](PROJECT_PLAN.md).
+
+Keep SQLite for saved drafts, LangGraph checkpoints, and approval/send state across restarts. No external database, full message archive, RAG, vector database, or additional agents are needed.
+
+### Personalize your voice
+
+On the **People** tab, open **Customize voice** on the **Default voice** card or a person's card. Add incoming-message/my-response example cards and optional personal style instructions. Recipient examples replace default examples; default instructions still apply.
+
+For a recipient, click **Suggest examples from this chat** to read the recent allowed window without calling a model. Review/edit candidates, select the ones you want, click **Add selected to voice**, then **Save my voice**. Cancel saves nothing. You can edit or remove saved examples later. Changes apply to new drafts, not existing proposals. This is prompting with local examples, not model training or RAG. See [voice personalization](VOICE_PERSONALIZATION.md) for limits.
+
+Restart the backend after updating, then refresh the dashboard to load these features.
+
+## Command cheat sheet
+
+Run from the repository root unless a command starts with `cd frontend`.
+
+```sh
+# Get the login token for demo mode
+cat data/demo/api-token
+
+# Get the login token for live mode
+cat data/api-token
+
+# Start the backend and dashboard at http://127.0.0.1:8001 (Ctrl+C to stop)
+uv run uvicorn ghost.main:create_app --factory --host 127.0.0.1 --port 8001
+
+# Start the frontend dev server at http://127.0.0.1:5173, which reloads on code changes
+cd frontend && npm run dev
+
+# Rebuild the dashboard served on port 8001 after frontend changes
+cd frontend && npm run build
+
+# See what is using port 8001, when the backend says "address already in use"
+lsof -nP -iTCP:8001 -sTCP:LISTEN
+
+# Stop that process (use the PID from lsof)
+kill -TERM <PID>
+
+# Check that Ollama is running and which models it has
+ollama list
+
+# Test AI summaries and drafts on synthetic messages
+uv run python -m ghost.check_ai
+
+# Install or update dependencies after pulling changes
+uv sync --extra dev
+cd frontend && npm ci
+
+# Run backend tests and lint
+uv run pytest
+uv run ruff check backend
+
+# Run frontend tests
+cd frontend && npm test
+```
+
+Restart the backend after changing `.env` or backend code.

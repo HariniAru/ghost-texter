@@ -1,125 +1,200 @@
 # Ghost Texter
 
-A local personal messaging assistant that drafts replies in your voice and waits for you to edit, approve, or reject each one. Python + FastAPI + LangGraph, React + TypeScript, lightweight local SQLite persistence, Ollama, and a Mac Messages MCP adapter. No database server or cloud model is required.
+**Catch up on your iMessages and answer them in your own voice, without anything ever sending by accident.**
 
-The default workspace uses synthetic conversations and canned replies. It never accesses Messages or sends a real text. Enable a local Ollama model or OpenAI for personalized drafts; enable the iMessage adapter separately.
+Ghost Texter is a small app that runs entirely on your Mac. It finds the unread messages from people you pick, summarizes each conversation, and drafts a reply that sounds like you, using an AI model running on your own computer. You read it, edit it, and decide. **Nothing is sent until you approve the exact text.**
 
-## Run locally
+![The inbox: a list of unread chats, a summary, the recent messages and a reply box with a saved draft](docs/images/inbox.png)
 
-Requires Python 3.10+, uv, and Node 22.
+*The screenshots use the built-in demo chats, which are made up.*
+
+## The problem
+
+Replying to messages is a chore when a backlog builds up. You have to re-read each thread to remember where it stood, work out what the other person is actually asking, and then write something that sounds like you. Tools that auto-reply for you are risky: a wrong guess goes out under your name, and your private messages usually go to someone else's server to be processed.
+
+Ghost Texter takes the slow parts and leaves the decision with you:
+
+- **A refresher, not a reread.** A short summary and the latest 50 messages sit next to the reply box.
+- **A first draft in your voice.** You set a default style, then add examples for individual people. Replies to your brother can be short and full of banter, while replies to a coworker stay polite.
+- **You stay in control.** Every send needs your approval of the exact saved text, and the app is built so the AI cannot send on its own.
+- **Private by design.** The model runs on your Mac, your messages are read only from the contacts you add, and the app is not meant to be reachable from the network.
+
+## How it works
+
+1. **Add people.** On the **People** tab, add the contacts the app may read, as a name and a full phone number (such as `+14155550123`). It reads no one else.
+2. **Open your inbox.** It lists unread chats from those people. Reading never marks a message as read.
+3. **Open a chat.** You see a short summary, the earlier messages in a fold, the unread messages, and an always-there **Your reply** box.
+4. **Get a draft.** Type your own reply, or press **Draft a reply** and edit what comes back. Your text is saved automatically, so you can leave and come back. Pressing **Draft a reply** again gives you a different version, because the app remembers the drafts you threw away.
+5. **Send.** **Send** opens a confirmation showing exactly who it goes to and the exact text. Only that dialog's confirm button sends.
+
+![The People tab: a default voice card and a card for each person, with a Customize voice button](docs/images/people.png)
+
+### What keeps sending safe
+
+These rules are enforced in the code and covered by tests:
+
+- A real send needs your approval of one saved version of the reply, to one recipient, with the conversation as it stood when you approved. If you edit the text or new messages arrive, the old approval no longer counts.
+- The AI model writes text only. It has no tools, no access to the messaging connector and no way to send.
+- The approval is written to disk before anything is sent. If the outcome of a send is unclear (a crash, a timeout), the app never retries by itself. It checks Messages for the message, then asks you.
+- Demo mode never sends at all, so you can try everything without risk.
+- Message text is never written to logs, and your data stays in a local `data/` folder that is not part of the repository.
+
+The full rules are in [docs/APPROVAL_CONTRACT.md](docs/APPROVAL_CONTRACT.md).
+
+## Quick start (demo mode)
+
+Demo mode uses four made-up chats (Alex, Maya, Jordan and Priya) and needs no Messages access. It is the best way to try the app.
+
+You need Python 3.10 or newer, [uv](https://docs.astral.sh/uv/) and Node 22.
 
 ```sh
+git clone https://github.com/HariniAru/ghost-texter.git
+cd ghost-texter
 cp .env.example .env
-uv sync --extra dev
-cd frontend
-npm ci
-npm run build
-cd ..
+uv sync
+cd frontend && npm ci && npm run build && cd ..
 uv run uvicorn ghost.main:create_app --factory --host 127.0.0.1 --port 8001
 ```
 
-Open http://127.0.0.1:8001. Run `cat data/api-token` from the repository root and copy the output into the login screen. The **Unread inbox** shows synthetic unread conversations. Select one to see recent messages and an excerpt (or an AI summary when enabled), then click **Draft a reply**. **Refresh inbox** checks for unread changes without replacing your selected conversation or draft. Enable **Auto-refresh every 30 seconds** to keep the list current while the dashboard is open; it defaults to off and shows the last successful update and any connection error. Select a conversation again to reload its messages and summary; **Draft history** retains saved reviews. Use **My voice** to add style preferences and messages you wrote. Save edits, then use Review simulated send and its final confirmation. Demo approvals simulate sends. Live drafts use Review & send and Confirm & send; see the first-send walkthrough.
+Then open <http://127.0.0.1:8001>. The login screen asks for a token that the app creates the first time it starts. Print it with:
 
-For development, run `npm run dev` inside frontend in a second terminal; open http://127.0.0.1:5173. The Vite server proxies API calls to port 8001.
+```sh
+cat data/api-token
+```
 
-Run only one backend worker/process. This is a single-user local application; do not expose it to the network.
+Paste it in, and you are in. Press **Send** on a draft: in demo mode it explains that nothing is sent and leaves the chat in your inbox, so you can try again.
 
-## Restart the backend
+Without an AI model, **Draft a reply** fills in a plain placeholder and the summary is a short excerpt of the chat. To get real drafts, connect a model as described next.
 
-Restart the backend after changing `.env` or backend code:
+## Connect an AI model
 
-1. In the terminal running the backend, press **Ctrl+C** and wait for shutdown to complete.
-2. Start it again from the repository root:
+Ghost Texter talks to a model that runs **on your own computer** through [Ollama](https://ollama.com), an app that downloads and runs open models locally. Nothing leaves your Mac.
+
+1. Install Ollama and start it. The desktop app starts it for you, or run `ollama serve`.
+2. Download a model. The default is a small, fast one:
 
    ```sh
-   cd /Users/harini/Desktop/interviewing/ghost-texter
-   uv run uvicorn ghost.main:create_app --factory --host 127.0.0.1 --port 8001
+   ollama pull qwen3:4b
    ```
 
-3. Leave that terminal running and refresh the browser. If the frontend development server is already running, keep using http://127.0.0.1:5173.
+3. Turn it on in `.env`:
 
-If you see **address already in use**, another process is still using port 8001. Closing a terminal may leave it running. Find it:
+   ```dotenv
+   GHOST_LLM=true
+   GHOST_MODEL=qwen3:4b
+   GHOST_OLLAMA_URL=http://127.0.0.1:11434
+   ```
 
-```sh
-lsof -nP -iTCP:8001 -sTCP:LISTEN
+4. Check it works. This uses made-up messages only and never touches Messages:
+
+   ```sh
+   uv run python -m ghost.check_ai
+   ```
+
+5. Restart the app.
+
+To use a different model, run `ollama pull <name>` for any model Ollama offers and put that name in `GHOST_MODEL`. Bigger models follow your voice rules more reliably but are slower. A 4-billion-parameter model such as `qwen3:4b` runs on most recent Macs, though it will sometimes ignore a strict rule (like "reply with only one word").
+
+**A hosted model with an API key is not supported.** That is a deliberate choice. The app refuses any model address that is not on your own machine (`localhost`), so your conversations are never sent to a server. Details are in [docs/OLLAMA.md](docs/OLLAMA.md) and [docs/PRIVACY.md](docs/PRIVACY.md).
+
+## Use it with your real iMessages
+
+This part needs a Mac that is signed in to Messages. It reads and sends through a connector, [mac_messages_mcp](https://github.com/carterlasalle/mac_messages_mcp), which the app runs for you.
+
+1. Give the Terminal app that launches the backend **Full Disk Access** (System Settings, then Privacy & Security), and restart it.
+2. In `.env`, set `GHOST_MODE=imessage` and restart the app.
+3. Add your people on the **People** tab. Sending stays off at this point (`GHOST_SEND_ENABLED=false`), so you can read, summarize and draft safely.
+4. When you are happy with the drafts, set `GHOST_SEND_ENABLED=true` and restart. The send button now reads **Confirm & send** and sends for real, one approved message at a time.
+
+Walk through your first real send with [docs/FIRST_SEND.md](docs/FIRST_SEND.md). The full setup and troubleshooting notes are in [docs/SETUP.md](docs/SETUP.md). Only direct chats are supported. Group chats and attachments are not.
+
+## Using the app
+
+- **Reply box.** It is always on screen for an open chat. It saves about a second after you stop typing.
+- **Draft a reply.** Fills the box with a draft. If you already typed something, it asks before replacing it. **Undo** brings your text back.
+- **Keyboard.** `Cmd+Enter` (or `Ctrl+Enter`) in the box opens the send confirmation but never sends. `Cmd+Shift+Enter` drafts a reply.
+- **Customize your voice.** On the **People** tab, the **Default voice** card sets your general style and example replies. A person's card adds examples for just that person, which replace the default examples for them. **Suggest examples from this chat** finds replies you wrote in that chat for you to review. Nothing is learned or saved without you approving it.
+- **Automatic drafts.** In **Options**, you can have the app prepare drafts for unread chats in the background. Drafts are still only drafts: they are never sent automatically.
+- **New messages after a draft.** The chat shows a warning, and **Use latest messages** keeps your text but approves it against the new messages.
+- **Interrupted sends.** If a send fails partway, the app checks Messages for about 30 seconds. If the message is not there, you choose **Try again** or **Discard draft**.
+
+## The stack
+
+| Piece | What it does |
+| --- | --- |
+| [Python](https://www.python.org) and [FastAPI](https://fastapi.tiangolo.com) | The local API: reading chats, saving drafts, checking approvals, sending |
+| [LangGraph](https://www.langchain.com/langgraph) | The drafting workflow: draft the reply, loop if it repeats one you rejected, then pause for a human review |
+| [React](https://react.dev), TypeScript and [Vite](https://vite.dev) | The dashboard you use in the browser |
+| [SQLite](https://www.sqlite.org) | Local storage for drafts, approval records, your voice settings and workflow checkpoints |
+| [Ollama](https://ollama.com) | Runs the AI model on your own computer (`qwen3:4b` by default) |
+| [Mac Messages MCP](https://github.com/carterlasalle/mac_messages_mcp) | The connector that reads and sends iMessages, launched and controlled by the backend |
+| [pytest](https://pytest.org), [Vitest](https://vitest.dev) and [Ruff](https://docs.astral.sh/ruff/) | Tests and linting |
+
+There is no cloud service, database server, or account anywhere in the stack. The design is explained in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## AI skills used to build it
+
+The project was built with [Claude Code](https://claude.com/claude-code). A *skill* is a folder of instructions that teaches the assistant to do one kind of job well. Four live in [.claude/skills](.claude/skills):
+
+- **[Impeccable](https://github.com/pbakaus/impeccable)** (by Paul Bakaus, Apache-2.0) is a design skill. It guides the interface work (layout, type, color, spacing) and can critique a screen against usability heuristics, which is where the score below comes from. It also ships a scanner that flags common design mistakes.
+- **approval-safety-check** is written for this project. Before any change to drafting, approval or sending counts as done, it audits the change against a 25-point checklist (for example, "the only code that sends is the approve endpoint") and reports each point as pass or fail.
+- **verify-demo** is also written for this project. It starts a throwaway server on made-up data and walks the app through its main flow, so a change can be checked in the running app without touching real messages.
+- **caveman** (a third-party skill, Apache-2.0) makes the assistant's answers short and plain. The same style is used for the instructions sent to the AI model, which keeps its prompts small and fast.
+
+`AGENTS.md` and `CLAUDE.md` hold the project's rules for the assistant, including the safety rules above.
+
+## By the numbers
+
+- **196 automated tests** (121 backend, 75 frontend), all passing. They use made-up messages and a fake connector, so no test can reach Messages.
+- **One place that sends.** The only call that sends a message is inside the approve endpoint, and the safety checklist has 25 rules.
+- **39/40 on the usability review**, up from 27/40 at the first review (explained below).
+- **A fast local draft.** On a development Mac with `qwen3:4b` and a 50-message chat, a draft takes about 2 seconds once the summary has run, and a redraft about 1.5 seconds. The summary takes about 8 seconds and runs in the background when you open a chat.
+- **Reliable regeneration.** In 30 simulated clicks of **Draft a reply** on the real local model, none failed. When the model repeats a draft you rejected, the app retries with a higher temperature, up to 3 times, before giving up.
+- **A small dashboard.** The built page is about 261 kB of JavaScript (81 kB compressed). Fonts are bundled, with no outside requests.
+
+### How the 39/40 usability score works
+
+The score comes from [Nielsen's 10 usability heuristics](https://www.nngroup.com/articles/ten-usability-heuristics/), a standard checklist for judging how easy an interface is to use. The Impeccable skill reviews the screen against each one and gives it a score from 0 to 4:
+
+| Score | Meaning |
+| --- | --- |
+| 4 | Excellent |
+| 3 | Good, with minor gaps |
+| 2 | Partial, with major gaps |
+| 1 | Poor |
+| 0 | Missing |
+
+Ten heuristics at up to 4 points each makes **40**, and 36 or more counts as "Excellent". The ten are: visibility of system status, match with the real world, user control and freedom, consistency and standards, error prevention, recognition over recall, flexibility and efficiency, minimalist design, error recovery, and help and documentation.
+
+The latest review of the inbox scored **39/40**: 4 on nine heuristics and 3 on user control, because removing a contact has no undo. The first review scored 27/40 ("Acceptable"), with weak spots in how visible the chats that need you were, in keyboard shortcuts, and in small print crowding the page. Eleven rounds of review and fixes got it to 39. All eleven reports are in [.impeccable/critique](.impeccable/critique).
+
+**What this is and is not.** These are reviews run by an AI skill inside Claude Code, from the code and a rendered page. They are not a study with real users, and a review by a person might score differently.
+
+## Project layout
+
+```
+backend/ghost/    FastAPI app, drafting workflow, storage, voice settings, connectors, dev scripts
+backend/tests/    Backend tests
+frontend/src/     The React dashboard and its tests
+docs/             Architecture, API, approval rules, setup, privacy and more
+.claude/skills/   The AI skills described above
 ```
 
-Check that it is the backend, then stop its PID (replace `12345` with the actual PID):
+Two small developer scripts are included. `uv run python -m ghost.check_ai` tests the model on made-up messages. `uv run python -m ghost.inspect_chat` prints the latest unread message of one allowed chat in your terminal, which shows real message text, so do not share its output.
 
-```sh
-kill -TERM 12345
-```
-
-Run `lsof` again to confirm the port is free, then restart using the command above.
-
-The commands under **Verify** run tests, lint checks, and a frontend build; they do not restart the backend. You do not need to rerun the first-time setup or copy `.env.example` over your existing `.env` to restart.
-
-## Inspect a chat from the backend
-
-With one allowlisted recipient configured in `.env`, run from the repo root:
-
-```sh
-uv run python -m ghost.inspect_chat
-```
-
-This prints the latest unread incoming message without starting the UI or sending anything. Use `--recipient "+14155550123"` to select an allowlisted recipient, or `--latest` to inspect the latest message regardless of read status. See [setup](docs/SETUP.md) for details.
-
-## Test local AI summaries and drafts
-
-See [Ollama setup](docs/OLLAMA.md). With Ollama running and `qwen3:4b` downloaded, set:
-
-```dotenv
-GHOST_LLM_PROVIDER=ollama
-GHOST_MODEL=qwen3:4b
-GHOST_OLLAMA_URL=http://127.0.0.1:11434
-GHOST_LLM=true
-GHOST_SEND_ENABLED=false
-```
-
-Run `uv run python -m ghost.check_ai` to test synthetic summaries and drafts locally, without API credits or Messages access. Restart the backend to use the local model in the dashboard. OpenAI remains optional via `GHOST_LLM_PROVIDER=openai`, its model name, and your own API key.
-
-## Project references
-
-- [Setup and live iMessage configuration](docs/SETUP.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [First approved-send walkthrough](docs/FIRST_SEND.md)
-- [Approval and dispatch contract](docs/APPROVAL_CONTRACT.md)
-- [API](docs/API.md)
-- [Privacy and data](docs/PRIVACY.md)
-- [Project plan and remaining work](docs/PROJECT_PLAN.md)
-- [Research and baseline projects](docs/SOURCES.md)
-- [Validation results](docs/VALIDATION.md)
-- [Minimal MVP scope and user flow](docs/PROJECT_FLOW.md)
-- [Contributor instructions](AGENTS.md)
-
-## Verify
-
-Run these from the repository root to check the code. These checks do not start or restart either server.
+To work on the code, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) and [AGENTS.md](AGENTS.md). To check everything:
 
 ```sh
 uv run pytest
 uv run ruff check backend
-cd frontend
-npm test
-npm run build
+cd frontend && npm test && npm run build
 ```
 
-### Prepare replies automatically
+## Limits to know about
 
-After connecting, enable **Prepare drafts automatically** in Unread inbox to prepare saved replies for configured unread conversations, one at a time. Enable **Auto-refresh every 30 seconds** as well to discover unread changes while the dashboard is open. Both options default to off. New replies show **Draft ready**; open one to edit, approve, or reject normally. Existing pending drafts are preserved, and rejected unchanged conversations are skipped. Model failures pause preparation until **Retry preparation**. Turning preparation off stops new work; an in-progress draft may still finish. No text is sent automatically. Restart the backend after updating to this version, then refresh the dashboard.
+- It works with direct iMessage chats on a Mac. It does not handle group chats, attachments or other messaging apps.
+- It is a single-user local tool. Run one copy, and do not expose it to a network.
+- A small local model can write a weak draft or miss a style rule. That is why every reply is reviewed before it goes out.
+- Messages is read through an unofficial connector, so a future macOS update could break it.
 
-## Focused MVP scope
-
-The target is allowlisted messages → recent-window summary → editable reply → explicit approval → send, with manual/automatic inbox refresh and optional automatic drafting **per chat**. See [the agreed flow](docs/PROJECT_FLOW.md).
-
-Two refinements remain: automatic preparation currently uses one global toggle, and manual regeneration does not yet use rejected alternatives to request a different reply. Reject currently retains the draft in history; it does not erase local records. See [the implementation plan](docs/PROJECT_PLAN.md).
-
-Keep SQLite for saved drafts, LangGraph checkpoints, and approval/send state across restarts. No external database, full message archive, RAG, vector database, or additional agents are needed. Existing optional OpenAI support is not required for the local Ollama setup.
-
-### Personalize My voice
-
-In **My voice**, choose **Default voice** or a configured recipient. Add incoming-message/my-response example cards and optional personal style instructions. Recipient examples replace default examples; default instructions still apply.
-
-For a recipient, click **Suggest examples from this chat** to read the recent allowed window without calling a model. Review/edit candidates, select the ones you want, click **Add selected to voice**, then **Save my voice**. Cancel saves nothing. You can edit or remove saved examples later. Changes apply to new drafts, not existing proposals. This is prompting with local examples, not model training or RAG. See [voice personalization](docs/VOICE_PERSONALIZATION.md) for limits.
-
-Restart the backend after updating, then refresh the dashboard to load these features.
+More in [docs](docs): [the product flow](docs/PROJECT_FLOW.md), [voice personalization](docs/VOICE_PERSONALIZATION.md), [API](docs/API.md) and [remaining work](docs/PROJECT_PLAN.md).

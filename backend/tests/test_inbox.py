@@ -8,6 +8,29 @@ from ghost.main import create_app
 from ghost.messaging import DemoMessenger, MacMessages
 from ghost.workflow import summarize
 
+# Sends only run outside demo mode, so these tests use live-mode settings with the fake connector.
+LIVE = dict(
+    mode="imessage",
+    send_enabled=True,
+    allowed_recipients=[
+        "alex@example.test",
+        "maya@example.test",
+        "jordan@example.test",
+        "priya@example.test",
+    ],
+)
+
+
+@pytest.fixture
+def live_workspace(tmp_path):
+    messenger = DemoMessenger()  # Fake connector, with live-mode rules so Send really runs.
+    app = create_app(
+        Settings(data_dir=tmp_path, api_token="test-token", **LIVE, _env_file=None), messenger
+    )
+    with TestClient(app) as client:
+        client.headers["Authorization"] = "Bearer test-token"
+        yield client, messenger
+
 
 @pytest.fixture
 def workspace(tmp_path):
@@ -23,7 +46,7 @@ def test_inbox_and_summary_are_read_only_and_rejection_preserves_unread(workspac
     before = dict(messenger.unread_messages)
     rows = client.get("/api/inbox").json()
     assert {r["recipient"] for r in rows} == set(messenger.history)
-    assert all(r["unread_count"] == 1 for r in rows)
+    assert all(r["unread_count"] == len(before[r["recipient"]]) for r in rows)
     detail = client.get("/api/conversation", params={"recipient": rows[0]["recipient"]})
     assert detail.status_code == 200
     assert detail.json()["summary_kind"] == "excerpt"
@@ -39,7 +62,8 @@ def test_inbox_and_summary_are_read_only_and_rejection_preserves_unread(workspac
 def test_inbox_filters_read_conversations(workspace):
     client, messenger = workspace
     messenger.unread_messages["alex@example.test"] = []
-    assert [r["recipient"] for r in client.get("/api/inbox").json()] == ["maya@example.test"]
+    listed = [r["recipient"] for r in client.get("/api/inbox").json()]
+    assert listed == [r for r in messenger.history if r != "alex@example.test"]
     messenger.unread_messages.clear()
     assert client.get("/api/inbox").json() == []
 
@@ -136,12 +160,8 @@ def test_mcp_unread_errors_do_not_look_like_empty_inbox():
 def test_ai_summary_uses_structured_output_without_tools(monkeypatch):
     model = Mock()
     model.with_structured_output.return_value.invoke.return_value.text = "Alex asks about coffee."
-    factory = Mock(return_value=model)
-    monkeypatch.setattr("ghost.workflow.ChatOpenAI", factory)
-    result = summarize(
-        "Alex: coffee tomorrow?",
-        Settings(llm=True, openai_api_key="synthetic-test-key", _env_file=None),
-    )
+    monkeypatch.setattr("ghost.workflow.create_model", lambda *_, **__: model)
+    result = summarize("Alex: coffee tomorrow?", Settings(llm=True, _env_file=None))
     assert result == {"summary": "Alex asks about coffee.", "summary_kind": "ai"}
     assert (
         "coffee tomorrow?"
@@ -162,3 +182,60 @@ def test_incompatible_connector_error_reaches_dashboard(workspace):
     response = client.get("/api/inbox")
     assert response.status_code == 502
     assert "incompatible" in response.json()["detail"]
+
+
+def test_a_chat_leaves_the_inbox_once_answered_and_returns_on_a_new_message(live_workspace):
+    client, messenger = live_workspace
+
+    def listed():
+        return [r["recipient"] for r in client.get("/api/inbox").json()]
+
+    jordan = "jordan@example.test"
+    row = client.post("/api/drafts", json={"recipient": jordan}).json()
+    client.post(f"/api/drafts/{row['id']}/reject", json={"version": 1})
+    assert jordan in listed()  # Only a sent reply counts, not a discarded draft.
+
+    row = client.post("/api/drafts", json={"recipient": jordan}).json()
+    assert client.post(f"/api/drafts/{row['id']}/approve", json={"version": 1}).status_code == 200
+    assert jordan not in listed()
+    assert "alex@example.test" in listed()  # Other chats are unaffected.
+
+    messenger.history[jordan] += "\nJordan: ok see you sunday"
+    messenger.unread_messages[jordan] = ["Jordan: ok see you sunday"]
+    assert jordan in listed()
+
+
+def test_a_chat_opens_before_its_summary_and_the_summary_follows(workspace, monkeypatch):
+    client, messenger = workspace
+    summary = Mock(return_value={"summary": "A coffee invitation.", "summary_kind": "ai"})
+    monkeypatch.setattr("ghost.main.summarize", summary)
+    alex = {"recipient": "alex@example.test"}
+
+    opened = client.get("/api/conversation", params={**alex, "summary": "false"}).json()
+    assert opened["summary"] is None and "coffee tomorrow" in opened["context"]
+    assert summary.call_count == 0
+
+    asked = {**alex, "fingerprint": opened["fingerprint"]}
+    assert client.get("/api/conversation/summary", params=asked).json()["summary"] == (
+        "A coffee invitation."
+    )
+    # Cached: reopening includes it at once, and asking again does not call the model.
+    again = client.get("/api/conversation", params={**alex, "summary": "false"}).json()
+    assert again["summary"] == "A coffee invitation."
+    client.get("/api/conversation/summary", params=asked)
+    assert summary.call_count == 1
+
+    messenger.history["alex@example.test"] += "\nAlex: how about 11?"
+    changed = client.get("/api/conversation/summary", params={**alex, "fingerprint": "old"})
+    assert changed.status_code == 409
+    stranger = {"recipient": "unknown@example.test", "fingerprint": "x"}
+    assert client.get("/api/conversation/summary", params=stranger).status_code == 422
+    assert not messenger.sent
+
+
+def test_demo_chats_stay_in_the_inbox_after_send(workspace):
+    client, messenger = workspace
+    row = client.post("/api/drafts", json={"recipient": "alex@example.test"}).json()
+    assert client.post(f"/api/drafts/{row['id']}/approve", json={"version": 1}).status_code == 200
+    assert messenger.sent == []
+    assert "alex@example.test" in [r["recipient"] for r in client.get("/api/inbox").json()]

@@ -9,6 +9,11 @@ from ghost.voice import Profile, resolve_profile, suggest_pairs
 from pydantic import ValidationError
 
 
+def answer(schema, *texts):
+    """What the model returns: one reply for a first draft, a list of replies for a redraft."""
+    return schema(text=texts[0]) if "text" in schema.model_fields else schema(texts=list(texts))
+
+
 def test_old_profile_and_recipient_isolation():
     old = {"style": "warm", "examples": ["default example"]}
     assert resolve_profile(old, "a")["examples"] == ["default example"]
@@ -17,7 +22,7 @@ def test_old_profile_and_recipient_isolation():
         recipients={"a": {"style": "brief", "pairs": [{"incoming": "hi", "response": "a only"}]}},
     ).model_dump()
     assert resolve_profile(profile, "a") == {
-        "style": "warm\nRecipient-specific preferences: brief",
+        "style": "Rules for this recipient (they override the general style): brief\nGeneral style: warm",
         "examples": [],
         "pairs": [{"incoming": "hi", "response": "a only"}],
     }
@@ -101,9 +106,9 @@ def test_drafting_receives_only_resolved_voice_and_keeps_review_pause(tmp_path, 
 
         def invoke(self, messages):
             prompts.append(json.loads(messages[-1][1]))
-            return self.schema(text="synthetic reply")
+            return answer(self.schema, "synthetic reply")
 
-    monkeypatch.setattr(workflow, "create_model", lambda _: FakeModel())
+    monkeypatch.setattr(workflow, "create_model", lambda *_, **__: FakeModel())
     messenger = DemoMessenger()
     settings = Settings(data_dir=tmp_path, api_token="test", llm=True, _env_file=None)
     with TestClient(create_app(settings, messenger)) as client:

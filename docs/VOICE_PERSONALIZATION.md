@@ -2,13 +2,13 @@
 
 ## Current behavior
 
-My voice supports global instructions and standalone examples, paired incoming/reply cards, exact-recipient overrides, and reviewed deterministic chat import through the existing local profile storage. All changes require Save my voice.
+The People tab supports global instructions and standalone examples on a Default voice card, plus paired incoming/reply cards, exact-recipient overrides, and reviewed deterministic chat import on each person's card, through the existing local profile storage. Voice settings are optional and collapsed by default. Each card's changes require its own Save my voice and do not save other cards' edits.
 
 ## Experience
 
 - Keep a global default style and existing standalone examples.
 - Add repeatable example cards with **Incoming message** and **My response** fields. Users can add, edit, or remove cards and explicitly save their changes.
-- Choose **Default voice** or a configured exact recipient in My voice. A recipient can have optional additional instructions and their own example cards, e.g. a sibling versus a friend. No contact lookup or relationship classification is required.
+- Open **Customize voice** on the **Default voice** card or a person's card. A recipient can have optional additional instructions and their own example cards, e.g. a sibling versus a friend. No contact lookup or relationship classification is required.
 - Add **Suggest examples from this chat** for an allowlisted recipient. Read up to the existing 50-message context window through the configured MCP adapter. Preview candidate incoming/user-response pairs and optionally suggested style notes; let the user edit, select, and save them. Nothing becomes part of the saved voice automatically.
 - Keep saved examples editable and removable. Drafts already generated remain unchanged; future drafts use the saved profile.
 

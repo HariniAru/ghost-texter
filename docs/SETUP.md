@@ -4,7 +4,7 @@ Follow the root README for the working demo. Launch all commands from the repo r
 
 ## Personalized AI drafts
 
-For local AI, follow OLLAMA.md; no API key is required. For OpenAI, set `GHOST_LLM_PROVIDER=openai`, `GHOST_LLM=true`, and `OPENAI_API_KEY` in `.env`. Optionally set `GHOST_MODEL`. Restart the backend. Add writing samples in My voice. For OpenAI, the selected conversation, your style, and your examples will be sent to the model provider; no message tools are exposed to the model. Without LLM mode, replies are deliberately canned placeholders and do not claim to imitate you.
+For AI drafts, follow OLLAMA.md: a local Ollama model, with no API key. Set `GHOST_LLM=true` and optionally `GHOST_MODEL`, then restart the backend. Add writing samples on the People tab. Everything stays on your Mac, and no message tools are exposed to the model. Without LLM mode, replies are deliberately canned placeholders and do not claim to imitate you.
 
 ## iMessage through Mac Messages MCP
 
@@ -22,10 +22,12 @@ GHOST_ALLOWED_RECIPIENTS=["+14155550123"]
 GHOST_SEND_ENABLED=false
 ```
 
-4. Restart the backend. The Unread inbox checks your allowlisted recipients for unread inbound messages. Select a conversation to see recent context and a summary, then request a draft. Use Refresh inbox for new messages. Existing drafts remain in Draft history. The adapter retrieves up to the latest 50 messages, with a fixed starting date. It uses the recipient as the exact existing Messages chat identifier, including outgoing context. If this identifier does not resolve on your connector version, reads fail closed; no broader contact-search fallback is used. Review context and draft. Permission errors fail closed.
+4. Restart the backend. The Inbox checks your allowlisted recipients for unread inbound messages. Select a conversation to see recent context and a summary, then request a draft. Use Refresh inbox for new messages. Existing drafts stay on their chat in the Inbox. The adapter retrieves up to the latest 50 messages, with a fixed starting date. It uses the recipient as the exact existing Messages chat identifier, including outgoing context. If this identifier does not resolve on your connector version, reads fail closed; no broader contact-search fallback is used. Review context and draft. Permission errors fail closed.
 5. When ready to use the app for real sends, set `GHOST_SEND_ENABLED=true` and restart. The dashboard's **Approve & send** button authorizes the exact saved reply. Every later message still needs approval.
 
-Use exact E.164 phone numbers or emails, never fuzzy contact names. Adding a recipient is a local configuration change. The application checks unread messages only for allowlisted recipients. It does not enumerate all conversations, mark messages read, or automatically send anything. Unread counts show up to 50 messages (50+ when capped). With AI disabled, the summary area shows a labeled message excerpt instead. Run it on the Mac with Messages access, outside Linux Docker.
+You can leave `GHOST_ALLOWED_RECIPIENTS` empty and manage people on the **People** tab instead, with no restart. Each contact is a name and a phone number. Addresses in `.env` still work, show as "from .env", and can only be removed there. Add one of those numbers on the tab to give it a name. The `ghost.inspect_chat` command still uses only `.env`.
+
+Use exact E.164 phone numbers or emails, never fuzzy contact names. Adding a recipient is a local change. The application checks unread messages only for allowlisted recipients. It does not enumerate all conversations, mark messages read, or automatically send anything. Unread counts show up to 50 messages (50+ when capped). With AI disabled, the summary area shows a labeled message excerpt instead. Run it on the Mac with Messages access, outside Linux Docker.
 
 The MCP is launched via uv from the pinned official GitHub revision above, through the project wrapper. The PyPI 1.1.0 package inspected during diagnosis advertises only hours/contact/chat_id for recent reads; newer unread/date/pagination arguments were silently ignored. Do not substitute that older package launcher. The adapter now checks the advertised schema before invoking a tool and reports incompatible versions explicitly. It also handles escaped timestamped transcript separators while retaining the untrusted-data envelope. No live sends are performed by the project test suite.
 
@@ -36,7 +38,7 @@ Read-only validation on the configured Mac retrieved 50 history rows; the select
 - 401: paste the token from the configured data directory; restart the server after changing environment configuration.
 - 409: the draft version or conversation changed. Refresh and generate a new draft if stale.
 - 502 on draft: check your model API key, MCP executable, and macOS permissions.
-- Uncertain send: verify the recipient's conversation in Messages. The same draft cannot be retried. Do not create another draft until you have checked whether delivery occurred.
+- Interrupted send: the app checks Messages for about 30 seconds and marks the draft sent if it finds the message. If not, check the conversation in Messages yourself, then choose **Try again** or **Discard draft**. Nothing resends unless you choose Try again and confirm the new draft.
 - The dashboard appears missing: run `npm ci && npm run build` inside frontend before starting the API, or use the Vite development server.
 
 ## Inspect one chat directly from the backend
@@ -70,15 +72,15 @@ This selects one most recently active thread; it does not merge all historical t
 
 ## Validate AI before using private conversations
 
-For local Ollama, configure the provider as described in OLLAMA.md. For OpenAI, add `OPENAI_API_KEY` to the root `.env` locally; do not paste it into chat or commit it. Keep `GHOST_SEND_ENABLED=false`. The following command forces AI on for its own synthetic test only, even while `GHOST_LLM=false`:
+Configure Ollama as described in OLLAMA.md. Keep `GHOST_SEND_ENABLED=false`. The following command forces AI on for its own synthetic test only, even while `GHOST_LLM=false`:
 
 ```sh
 uv run python -m ghost.check_ai
 ```
 
-It makes two model requests using synthetic messages and a synthetic voice profile: one summary and one draft. It never opens Messages, loads your saved profile, persists a draft, or sends anything. A successful run prints the summary/reply and confirms the graph paused for approval. Missing credentials fail before network access. Authentication, billing, model access, or network failures return a sanitized error. This test uses API credits only with the OpenAI provider; Ollama runs locally.
+It makes two model requests using synthetic messages and a synthetic voice profile: one summary and one draft. It never opens Messages, loads your saved profile, persists a draft, or sends anything. A successful run prints the summary/reply and confirms the graph paused for approval. Missing credentials fail before network access. Authentication, billing, model access, or network failures return a sanitized error. It runs entirely on your Mac.
 
-After it passes, set `GHOST_LLM=true`, restart the backend, and open one selected conversation. Its latest context will go to the selected model for a summary (local Ollama or OpenAI); drafting additionally sends your saved voice profile. Add representative examples in My voice. Reject any old pending sample draft before requesting an AI draft for unchanged context, because pending reviews are deduplicated. Inspect summary accuracy and edit/reject replies as needed. Live sending remains a separate future test.
+After it passes, set `GHOST_LLM=true`, restart the backend, and open one selected conversation. Its latest context will go to the selected model for a summary (local Ollama); drafting additionally sends your saved voice profile. Add representative examples on the People tab. **Draft a reply** replaces an old sample draft, after asking. Inspect summary accuracy and edit or clear replies as needed. Live sending remains a separate future test.
 
 ## Keep the unread inbox current
 

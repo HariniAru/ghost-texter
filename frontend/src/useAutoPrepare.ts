@@ -5,7 +5,7 @@ type Candidate={recipient:string;preview:string;unread_count:number};
 // This queue only calls the draft-preparation endpoint, never approval/sending.
 export function useAutoPrepare<T>(items:Candidate[],connected:boolean,paused:boolean,
  prepare:(recipient:string,signal:AbortSignal)=>Promise<T>,onResult:(result:T)=>void){
- const [enabled,setEnabled]=useState(false);
+ const [enabled,setOn]=useState(false);
  const [working,setWorking]=useState(false);
  const [error,setError]=useState('');
  const [retryCount,setRetryCount]=useState(0);
@@ -38,6 +38,8 @@ export function useAutoPrepare<T>(items:Candidate[],connected:boolean,paused:boo
    if(pending.current===controller){pending.current=null;setWorking(false);}
   });
  },[items,connected,enabled,paused,working,error,retryCount]);
+ // Turning it on starts over: every unread chat is looked at again, so ones tried earlier are not skipped.
+ function setEnabled(on:boolean){if(on){attempted.current.clear();failed.current='';setError('');}setOn(on);}
  function retry(){attempted.current.delete(failed.current);setError('');setRetryCount(n=>n+1);}
  return {enabled,setEnabled,working,error,retry};
 }

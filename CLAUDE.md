@@ -8,7 +8,7 @@ The rules in AGENTS.md are binding. This file adds the product outline, current 
 
 A single-user, local macOS tool for catching up on and replying to iMessages:
 
-1. Find unread messages in the chats listed in `GHOST_ALLOWED_RECIPIENTS` and show them in an inbox.
+1. Find unread messages in the user's contacts and show them in an inbox. Contacts are added on the People tab or listed in `GHOST_ALLOWED_RECIPIENTS`.
 2. Pull the latest 50 messages of a conversation and show a quick summary as a refresher.
 3. Draft a reply in the user's voice, automatically or on request, which the user can edit or regenerate.
 4. Keep unsent drafts so the user can come back to them. A draft leaves the saved list once it is properly sent.
@@ -22,27 +22,31 @@ Nothing is ever sent without explicit approval of the exact saved text.
 
 | Feature | Today | Gap |
 | --- | --- | --- |
-| Unread inbox | `GET /api/inbox` checks each address in `GHOST_ALLOWED_RECIPIENTS`; manual refresh or opt-in 30s browser timer | None for now. Keep the allowlist: expanding to all chats is a later decision, after everything is verified working |
-| 50-message context and summary | `GET /api/conversation`; AI summary of up to three sentences, or a labeled excerpt when AI is off; cached per recipient and fingerprint | None |
-| Automatic drafts | Browser queue behind one global toggle, off by default | Replace with saved per-chat opt-in |
-| Edit | Save increments the version | None |
-| Regenerate | Only by rejecting, then drafting again. `POST /api/drafts` returns the existing pending draft for an unchanged snapshot | Add explicit regeneration informed by rejected alternatives. Ollama runs at temperature 0, so an unchanged prompt will tend to repeat the same text |
-| Saved drafts | Draft history shows every draft of every status and survives restarts | Remove `sent` drafts from the list (see below) |
+| Contacts | Add and remove a name and exact phone number on the People tab, stored in SQLite; `.env` addresses still count and can only be removed there | `ghost.inspect_chat` still uses only `.env` |
+| Unread inbox | `GET /api/inbox` checks each contact; manual refresh or opt-in 30s browser timer. In live mode a chat is hidden once you send a reply from the app whose context includes its newest unread message, and returns when they write again. Demo mode never hides a chat, because demo Send does nothing | None for now. Keep the contacts boundary: expanding to all chats is a later decision, after everything is verified working |
+| 50-message context and summary | `GET /api/conversation`; AI summary of up to three short sentences (about 40 words), or a labeled excerpt when AI is off; cached per recipient and fingerprint | None |
+| Automatic drafts | Browser queue behind one global toggle, off by default. Turning it on drafts every unread chat that has no pending draft, including ones whose earlier drafts were rejected | Replace with saved per-chat opt-in |
+| Reply box | Sits in one card with the messages it answers (unread messages directly above it, earlier ones in a fold above them; the summary is a separate short card; `thread.ts` splits the text and reads message times for display only). Always shown on an open chat, empty until there is a saved draft. It autosaves about 1.2 seconds after typing stops (one save at a time, each from the server's current version), and **Send** saves it, using `POST /api/drafts/typed` for typed text, before opening the confirmation. **Undo** brings back text that Clear or a new draft replaced. **Cmd+Enter** (or Ctrl+Enter) in the box opens the same confirmation as Send and never sends; **Cmd+Shift+Enter** drafts. A failed autosave shows an alert and keeps the text. Leaving the chat saves it too. Each save increments the version | None |
+| Regenerate | **Draft a reply** over an existing draft rejects it and drafts again, after asking if the box has text. **Clear** also rejects. `POST /api/drafts` returns the existing pending draft for an unchanged snapshot The model gets up to 5 rejected drafts for the same fingerprint and is asked for a different reply. With rejected drafts it asks for four replies at temperature 0.8 instead of 0 and uses the first that is not a rejected one; if all repeat, the graph loops back to `draft` (temperature 1.0), up to 3 tries; if every try repeats one, the request fails with a 502, "Failed to generate a response draft. Try again." New messages or a sent reply change the fingerprint, so the list starts again | None |
+| Saved drafts | Each inbox chat keeps its pending draft or uncertain send, even with nothing unread, and survives restarts. Rejected and stale drafts stay in `GET /api/drafts` but are not shown | None |
 | Voice | Default style and examples, paired examples, exact-address overrides, reviewed import from a chat | None |
 
 ### Sent drafts
 
-Decided, not yet built: once a draft reaches `sent`, it has become a real message and is no longer needed, so it is removed from the saved drafts list. `GET /api/drafts` and Draft history currently return it, and `frontend/src/App.tsx` finds the open draft in that same list to show the send receipt, so the receipt must keep working.
+Demo mode never sends: `approve` returns the pending draft untouched (no dispatch, status change or event), so the sample chats stay unread. Everything below is live mode.
 
-- Only a connector-acknowledged `sent` qualifies. `uncertain` must stay visible, because the user has to check Messages before doing anything else.
-- Removing a draft from the list is not the same as deleting dispatch evidence. Keep the approval and send records on disk.
+Once a draft reaches `sent` it leaves `GET /api/drafts` and the inbox. The dashboard takes the receipt from the approve response, because the draft is no longer in the list.
+
+- `sent` needs a connector acknowledgment, or the exact text found as an outgoing message at or after approval. `uncertain` stays visible until it is found, retried, or discarded. See `useSendCheck.ts` and "Interrupted sends" in `docs/APPROVAL_CONTRACT.md`.
+- Removing a draft from the list is not the same as deleting dispatch evidence. The row and the approval and send records stay on disk.
+- Filter with `store.saved()` only for what the user sees. Automatic preparation needs `store.all()`, or it would redraft a snapshot that was already answered.
 
 ## Code map
 
 Backend, in `backend/ghost/`:
 
 - `main.py`: `create_app` factory holding all routes, auth, the allowlist check, and approve/dispatch.
-- `workflow.py`: LangGraph draft → `interrupt` review graph, plus `summarize`. Dispatch stays out of the graph so replay cannot resend.
+- `workflow.py`: LangGraph draft → `interrupt` review graph, plus `summarize`. A draft that repeats a rejected one loops back to `draft`, up to 3 times, then `give_up` fails the request. Dispatch stays out of the graph so replay cannot resend.
 - `messaging.py`: `Messenger` protocol (`unread`, `read`, `send`), `DemoMessenger`, `MacMessages`.
 - `voice.py`: profile validation, `resolve_profile`, and the deterministic `suggest_pairs` import.
 - `store.py`: SQLite drafts, events, and profile tables. It is the authority for text, versions, and status. Startup turns any leftover `sending` into `uncertain`.
@@ -55,11 +59,12 @@ Backend, in `backend/ghost/`:
 Frontend, in `frontend/src/`:
 
 - `App.tsx`: nearly all the UI.
-- `VoiceEditor.tsx`: My voice.
+- `VoiceEditor.tsx`: the Customize voice button on each People card, which opens that voice in a pop-up (`<dialog>`) with Save and Close pinned in its header. Closing with unsaved edits asks first; Discard restores the saved voice. Each card saves only its own edits.
+- `ContactsPanel.tsx`: the People tab: an add row, a Default voice card, and a grid of contact cards showing whether each has a personal voice.
 - `SendConfirmation.tsx`: final send dialog.
-- `useInboxRefresh.ts`, `useAutoPrepare.ts`: browser timers and the draft queue. There is no server-side background worker.
+- `useInboxRefresh.ts`, `useAutoPrepare.ts`, `useSendCheck.ts`: browser timers and the draft queue. There is no server-side background worker.
 
-Draft statuses: `pending` → `rejected` | `stale` | `sending`, then `sending` → `sent` | `uncertain`. All except `pending` and `sending` are terminal.
+There are two tabs, Inbox and People. Draft statuses: `pending` → `rejected` | `stale` | `sending`, then `sending` → `sent` | `uncertain`, then `uncertain` → `sent` | `discarded`. `rejected`, `stale`, `sent`, and `discarded` are terminal.
 
 ## Commands
 
@@ -83,9 +88,14 @@ Backend changes and `.env` changes need a backend restart.
 - The root `.env` and `data/` may hold live settings, tokens, and private messages. Do not open them. A plain backend start uses that `.env`, and `ghost.inspect_chat` prints real messages in live mode, so neither is a safe way to verify a change.
 - New tests must pass `_env_file=None` and `data_dir=tmp_path` to `Settings`, and use a fake messenger, as the existing tests do.
 - Transcript order differs by source: MCP is newest first and demo is oldest first. Anything that parses context must handle both; see `suggest_pairs` and `MESSAGE_ROW`.
-- Fingerprints hash the whole 50-message window. `stale` is only set during approval, so a pending draft can be out of date until then.
-- Voice resolution: recipient style is added to the default style, but any recipient examples replace the default examples. Keys are exact addresses, so a person's phone number and Apple ID email are separate profiles.
+- Live reads go through `text_only` in `messaging.py`, which drops reactions, attachment-only messages and the connector's paging note, so a chat can show fewer than 50 messages. Reactions also do not make a chat unread.
+- Fingerprints hash the whole 50-message window. `stale` is only set during approval, so a pending draft can be out of date until then. The inbox warning is advice only; `POST /api/drafts/{id}/refresh` is the only way to rebind a draft to newer messages.
+- Voice resolution: the model sees a recipient's style first, labeled as overriding, followed by the default style; any recipient examples replace the default examples. The prompt names them `voice_rules` and tells the model to follow them strictly, including on a redraft. Keys are exact addresses, so a person's phone number and Apple ID email are separate profiles.
+- Prompt order is for speed: every model call uses the one `SYSTEM` prompt, the conversation comes first in the user message and the task last. Ollama then reuses its reading of the 50 messages across the summary, a draft and a redraft (a draft after the summary takes about 2s instead of 6s). Do not put anything that varies, such as the task or voice, ahead of the conversation. `test_prompt.py` checks this.
+- Model instructions in `workflow.py` are deliberately terse to save tokens, in the style of the `caveman` skill, but must keep every never/not and ask for normal readable output. Conversation text goes to the model verbatim, with `ensure_ascii=False` so emoji and accents are not escaped. `test_prompt.py` checks both.
+- Use `live_recipients()` in `main.py`, not `settings.allowed_recipients`, for anything about who the app may read or send to. Only the source label and the `.env` removal check should read the setting directly.
 - `PUT /api/profile` is a full replacement. Clients must send back the fields they did not edit.
-- `config.py` defaults to the OpenAI provider and `gpt-4.1-mini`. The Ollama default comes from `.env.example`, so set the provider explicitly in code and tests.
+- The model is always the local Ollama client (`create_model` in `workflow.py`). `config.py` defaults to `qwen3:4b`; there is no cloud provider.
 - Trusted browser origins are hardcoded in `authorize` in `main.py`, on ports 8001 and 5173. A server on another port gets a 403 on browser UI actions, which is why `verify-demo` uses 8001. Do not widen the list just to make testing easier.
-- Update `docs/API.md` and `docs/APPROVAL_CONTRACT.md` when routes or draft lifecycle rules change, including the sent-draft change above.
+- Update `docs/API.md` and `docs/APPROVAL_CONTRACT.md` when routes or draft lifecycle rules change.
+- UI redesign work uses the `impeccable` skill (`.claude/skills/impeccable`). It keeps design context in root `PRODUCT.md` and `DESIGN.md` plus `.impeccable/`. A redesign must not change approval behavior: Send still opens the final confirmation, and only its confirm button calls approve. Do not use `/impeccable live` (it can launch an unsandboxed agent) and do not turn on its edit hook without asking.

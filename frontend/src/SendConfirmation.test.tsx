@@ -10,13 +10,14 @@ beforeAll(()=>{
 afterEach(cleanup);
 const draft={recipient:'alex@example.test',text:'hey! can we do 11 instead?',version:2};
 
-it('shows exact saved recipient, body, and version without sending on open',()=>{
+it('shows exact saved recipient and body without sending on open',()=>{
  const confirm=vi.fn();
  render(<SendConfirmation draft={draft} demo={false} sendEnabled={true} busy={false} onCancel={vi.fn()} onConfirm={confirm}/>);
  expect(screen.getByRole('dialog').hasAttribute('open')).toBe(true);
  expect(screen.getByText(draft.recipient)).toBeTruthy();
  expect(screen.getByText(draft.text)).toBeTruthy();
- expect(screen.getByText('SAVED REPLY · VERSION 2')).toBeTruthy();
+ expect(screen.getByText('Your reply')).toBeTruthy();
+ expect(screen.queryByText(/version/i)).toBeNull();
  expect(confirm).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'Confirm & send'}));
  expect(confirm).toHaveBeenCalledTimes(1);
@@ -43,7 +44,7 @@ it('blocks disabled live sending and explains how to enable it',()=>{
 it('demo confirmation remains simulated and works without enabling live sending',()=>{
  const confirm=vi.fn();
  render(<SendConfirmation draft={draft} demo={true} sendEnabled={false} busy={false} onCancel={vi.fn()} onConfirm={confirm}/>);
- expect(screen.getByText('This is a demo. No real text will leave the app.')).toBeTruthy();
+ expect(screen.getByText('This is a demo. Nothing will be sent and nothing will change.')).toBeTruthy();
  fireEvent.click(screen.getByRole('button',{name:'Confirm simulated send'}));
  expect(confirm).toHaveBeenCalledTimes(1);
 });

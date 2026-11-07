@@ -1,17 +1,17 @@
 # Architecture
 
-The MVP uses FastAPI, LangGraph, React/TypeScript/Vite, local SQLite, Ollama, and a backend-controlled Mac Messages MCP adapter. [PROJECT_FLOW.md](PROJECT_FLOW.md) defines the minimal product scope; [PROJECT_PLAN.md](PROJECT_PLAN.md) records remaining gaps. Optional OpenAI compatibility is not required for the local setup.
+The MVP uses FastAPI, LangGraph, React/TypeScript/Vite, local SQLite, Ollama, and a backend-controlled Mac Messages MCP adapter. [PROJECT_FLOW.md](PROJECT_FLOW.md) defines the minimal product scope; [PROJECT_PLAN.md](PROJECT_PLAN.md) records remaining gaps.
 
 ```mermaid
 flowchart LR
     UI[React review dashboard] --> API[Authenticated local FastAPI]
     API --> Read[Allowlisted conversation read]
     Read --> MCP[Mac Messages MCP / synthetic adapter]
-    API --> Graph[LangGraph draft → interrupt]
-    Graph --> Model[Optional local Ollama / OpenAI structured reply]
+    API --> Graph[LangGraph draft ↺ repeat check → interrupt]
+    Graph --> Model[Optional local Ollama structured reply]
     Graph --> Checkpoint[(SQLite graph checkpoints)]
     API --> Store[(Draft versions and approval audit)]
-    UI --> Review[Save edit / reject / approve]
+    UI --> Review[Save / clear / approve]
     Review --> API
     API --> Guard[Version + recipient + context checks]
     Guard --> Intent[Persist approval and dispatch intent]
@@ -19,7 +19,7 @@ flowchart LR
     Send --> MCP
 ```
 
-The graph generates a draft and pauses with `interrupt`. A durable SQLite checkpointer preserves the review pause across restarts. A graph resume records the decision, including the approved edited text. Dispatch is deliberately outside the graph so graph replay cannot resend messages.
+The graph generates a draft and pauses with `interrupt`. If the draft repeats one the user rejected for the same messages, a conditional edge sends it back to the draft node, up to 3 times, before the request fails. A durable SQLite checkpointer preserves the review pause across restarts. A graph resume records the decision, including the approved edited text. Dispatch is deliberately outside the graph so graph replay cannot resend messages.
 
 The domain store is the authority for editable text, integer versions, statuses, and audit events. Initial graph text remains the original proposal; approval includes the latest saved text from the domain store. A global asynchronous lock serializes mutation routes within the single supported API process. Database commits happen before external side effects.
 
@@ -37,6 +37,6 @@ Automatic preparation is a browser queue, off on every connection/reload. It han
 
 ## Target changes, not yet implemented
 
-Automatic preparation currently has one workspace-wide toggle; the agreed target is an independently saved opt-in for each exact-address chat. Rejection currently retains a terminal draft and permits manual generation again, but does not feed rejected alternatives into the prompt. The next changes should add these behaviors within the existing services and graph, without new agents or storage infrastructure. Local SQLite remains necessary for saved drafts and durable approval state; it is not a full archive of Messages.
+Automatic preparation currently has one workspace-wide toggle; the agreed target is an independently saved opt-in for each exact-address chat. Rejection retains a terminal draft. Manual drafting passes up to 5 rejected drafts for the same fingerprint into the prompt as untrusted data, and refuses an output that repeats one. The per-chat opt-in should be added within the existing services and graph, without new agents or storage infrastructure. Local SQLite remains necessary for saved drafts and durable approval state; it is not a full archive of Messages.
 
 Voice personalization extends the existing JSON profile in SQLite without a schema migration. `voice.py` validates global and exact-recipient profiles and resolves a bounded style/example input before graph invocation. Only the chosen recipient's examples (or global fallback) enter the graph; all recipient profiles are never passed to the model. The authenticated suggestions endpoint reads the current allowlisted chat window and extracts pairs deterministically, without a model or profile mutation. Review and explicit profile save are separate steps. This never runs during refresh or dispatch. See [VOICE_PERSONALIZATION.md](VOICE_PERSONALIZATION.md).

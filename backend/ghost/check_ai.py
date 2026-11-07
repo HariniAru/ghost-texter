@@ -5,7 +5,8 @@ import sys
 from langgraph.checkpoint.memory import InMemorySaver
 
 from ghost.config import Settings
-from ghost.workflow import AIConfigurationError, build_graph, summarize
+from ghost.ollama_model import AIConfigurationError
+from ghost.workflow import build_graph, summarize
 
 CONTEXT = (
     "[2026-10-18 10:00:00] Alex: want to grab coffee tomorrow?\n"
@@ -38,7 +39,7 @@ def main():
         return 2
     except Exception:
         print(
-            "AI check failed. Check the configured model provider and model access (or run ollama serve for local mode). "
+            "AI check failed. Check that Ollama is running (ollama serve) and the configured model is downloaded. "
             "No messages were accessed or sent.",
             file=sys.stderr,
         )

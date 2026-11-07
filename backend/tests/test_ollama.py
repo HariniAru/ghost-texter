@@ -10,14 +10,11 @@ from ghost.workflow import Reply, create_model
 
 
 def settings(**kwargs):
-    return Settings(llm_provider="ollama", model="qwen3:4b", _env_file=None, **kwargs)
+    return Settings(model="qwen3:4b", _env_file=None, **kwargs)
 
 
-def test_local_provider_needs_no_api_key_or_openai_client(monkeypatch):
-    cloud = Mock()
-    monkeypatch.setattr("ghost.workflow.ChatOpenAI", cloud)
+def test_the_model_is_always_the_local_ollama_client():
     assert isinstance(create_model(settings()), LocalOllama)
-    cloud.assert_not_called()
 
 
 def test_local_structured_request_has_no_credentials_tools_or_thinking(monkeypatch):

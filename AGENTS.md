@@ -15,7 +15,7 @@ Read docs/ARCHITECTURE.md, docs/APPROVAL_CONTRACT.md, and docs/PROJECT_PLAN.md b
 
 ## MVP scope
 
-Use docs/PROJECT_FLOW.md as the product scope and docs/PROJECT_PLAN.md to distinguish shipped behavior from planned work. Keep the stack to Python/FastAPI, LangGraph, React/TypeScript/Vite, local SQLite, Ollama, and the Mac Messages MCP adapter. Existing optional OpenAI support is compatibility code, not a requirement. Do not add RAG, vector databases, additional agents, database services, cloud hosting, or messaging platforms for this MVP. LangChain integrations are acceptable where already useful; no additional orchestration layer is needed.
+Use docs/PROJECT_FLOW.md as the product scope and docs/PROJECT_PLAN.md to distinguish shipped behavior from planned work. Keep the stack to Python/FastAPI, LangGraph, React/TypeScript/Vite, local SQLite, Ollama, and the Mac Messages MCP adapter. Do not add RAG, vector databases, additional agents, database services, cloud hosting, or messaging platforms for this MVP. LangChain integrations are acceptable where already useful; no additional orchestration layer is needed.
 
 Voice personalization scope is defined in docs/VOICE_PERSONALIZATION.md: retain global defaults, support paired incoming/user-response examples and exact-recipient overrides, then add explicit reviewed import from allowlisted chat windows. Never silently learn from messages or save extracted examples without user review. Treat only identifiable user-authored outgoing text as response examples; skip ambiguous data. Keep examples scoped, bounded, editable, and local; no RAG or fine-tuning.
 
@@ -23,6 +23,6 @@ Prioritize per-chat opt-in draft preparation and explicit regeneration informed 
 
 ## Project conventions
 
-Python backend lives in backend/ghost; React/TypeScript dashboard in frontend/src. Keep project reference Markdown under docs/ except this file and the root README. Maintain the common Messenger interface when adding platforms. Favor explicit small services over additional agents.
+Python backend lives in backend/ghost; React/TypeScript dashboard in frontend/src. Keep project reference Markdown under docs/ except this file, the root README, and the `impeccable` skill's PRODUCT.md and DESIGN.md, which the skill reads from the repo root (its `.impeccable/` folder lives there too). Maintain the common Messenger interface when adding platforms. Favor explicit small services over additional agents.
 
 Use `uv sync --extra dev`, `uv run pytest`, `uv run ruff check backend`, and `cd frontend && npm ci && npm test && npm run build`. Update docs for configuration, API, or approval-contract changes. Check dependency lockfiles into source control. Do not modify sibling projects.

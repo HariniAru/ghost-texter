@@ -16,4 +16,4 @@ These informed conventions. No sibling secrets or domain datasets were copied. S
 
 The exact connector installed on this Mac has not been exercised against private data. See SETUP.md and PROJECT_PLAN.md for live validation steps.
 
-AI activation references: [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs) and [GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini). The existing model choice was retained.
+AI activation references: [Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs).

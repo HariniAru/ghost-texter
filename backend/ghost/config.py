@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,10 +9,8 @@ class Settings(BaseSettings):
     data_dir: Path = Path("data")
     api_token: str = ""
     llm: bool = False
-    llm_provider: Literal["openai", "ollama"] = "openai"
     ollama_url: str = "http://127.0.0.1:11434"
-    openai_api_key: SecretStr | None = Field(default=None, validation_alias="OPENAI_API_KEY")
-    model: str = "gpt-4.1-mini"
+    model: str = "qwen3:4b"
     allowed_recipients: list[str] = []
     send_enabled: bool = False
     mcp_command: str = "uv"

@@ -30,23 +30,22 @@ ollama signin
 ollama run gemma4:cloud
 ```
 
-For direct application calls, the user can create their own key at https://ollama.com/settings/keys. Direct API base URLs are `https://ollama.com/api` or `https://ollama.com/v1` for OpenAI compatibility; cloud model names are those returned by the cloud model list (for example `gemma4:31b`), not necessarily the CLI's `:cloud` alias.
+For direct application calls, the user can create their own key at https://ollama.com/settings/keys. The direct API base URL is `https://ollama.com/api`; cloud model names are those returned by the cloud model list (for example `gemma4:31b`), not necessarily the CLI's `:cloud` alias.
 
 Cloud requests send conversation context to Ollama servers. Its docs currently state that cloud structured outputs are not supported. Ghost Texter currently relies on structured reply/summary validation, so cloud integration would need a separately tested output-parsing path.
 
 ## Ghost Texter integration
 
-Local `qwen3:4b` is downloaded. The project now supports a native local Ollama provider with schema-validated summary/reply output. Current workspace configuration uses:
+Local `qwen3:4b` is downloaded. Ghost Texter talks to a local Ollama server and validates every summary and reply against a schema. Current workspace configuration uses:
 
 ```dotenv
 GHOST_LLM=true
-GHOST_LLM_PROVIDER=ollama
 GHOST_MODEL=qwen3:4b
 GHOST_OLLAMA_URL=http://127.0.0.1:11434
 GHOST_SEND_ENABLED=false
 ```
 
-No OpenAI/HF/Ollama credential is used for this provider. The adapter accepts only loopback HTTP URLs, disables HTTP proxies/redirects, rejects cloud aliases, and has no fallback to another provider. Thinking is disabled, temperature is zero, context is 8192 tokens, and generation is bounded to 512 tokens. An input-size guard rejects oversized prompts; character length is only an approximate token safeguard. Structured output is validated against the existing Pydantic schema before use. Errors never authorize sending.
+No credential of any kind is used. The adapter accepts only loopback HTTP URLs, disables HTTP proxies/redirects, rejects cloud aliases, and has no fallback to another provider. Thinking is disabled, temperature is zero, context is 8192 tokens, and generation is bounded to 512 tokens. An input-size guard rejects oversized prompts; character length is only an approximate token safeguard. Structured output is validated against the existing Pydantic schema before use. Errors never authorize sending.
 
 Test with synthetic data (no Messages access):
 
@@ -54,7 +53,7 @@ Test with synthetic data (no Messages access):
 uv run python -m ghost.check_ai
 ```
 
-Then restart the FastAPI backend so it loads the updated provider. Open a conversation to generate a local summary, and request a draft. Reject old sample drafts first if they are still pending for unchanged context.
+Then restart the FastAPI backend so it loads the updated provider. Open a conversation to generate a local summary, and request a draft. A new draft replaces what is in the reply box, after asking.
 
 For general experimentation, use the same server independently of this project:
 
@@ -74,7 +73,6 @@ Inside chat, `/bye` exits. `ollama stop` frees model memory; the server can rema
 - https://docs.ollama.com/cloud.md
 - https://docs.ollama.com/gpu.md
 - https://docs.ollama.com/api/introduction.md
-- https://docs.ollama.com/api/openai-compatibility.md
 - https://docs.ollama.com/llms-full.txt (structured outputs, context length, macOS)
 - https://ollama.com/library/qwen3:4b
 - https://ollama.com/pricing

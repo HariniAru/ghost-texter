@@ -11,9 +11,10 @@ class AIConfigurationError(RuntimeError):
 
 
 class LocalOllama:
-    def __init__(self, settings, schema=None):
+    def __init__(self, settings, schema=None, temperature=0):
         self.settings = settings
         self.schema = schema
+        self.temperature = temperature
         url = urllib.parse.urlsplit(settings.ollama_url)
         if (
             url.scheme != "http"
@@ -31,7 +32,7 @@ class LocalOllama:
             raise AIConfigurationError("Choose a downloaded local Ollama model, such as qwen3:4b.")
 
     def with_structured_output(self, schema):
-        return LocalOllama(self.settings, schema)
+        return LocalOllama(self.settings, schema, self.temperature)
 
     def invoke(self, messages):
         if self.schema is None:
@@ -50,13 +51,13 @@ class LocalOllama:
             "stream": False,
             "think": False,
             "keep_alive": "5m",
-            "options": {"temperature": 0, "num_ctx": 8192, "num_predict": 512},
+            "options": {"temperature": self.temperature, "num_ctx": 8192, "num_predict": 512},
         }
         payload["messages"].append(
             {
                 "role": "user",
-                "content": "Answer the task above using the conversation data. Return a JSON object "
-                "matching this schema: " + json.dumps(self.schema.model_json_schema()),
+                "content": "Do the task above with the conversation data. Return JSON matching "
+                "this schema: " + json.dumps(self.schema.model_json_schema()),
             }
         )
         request = urllib.request.Request(

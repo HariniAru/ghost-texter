@@ -42,7 +42,9 @@ def resolve_profile(data, recipient):
     specific = profile.recipients.get(recipient)
     style = profile.style
     if specific and specific.style.strip():
-        style += "\nRecipient-specific preferences: " + specific.style
+        # Rules for this person come first and win over the general style.
+        style = "Rules for this recipient (they override the general style): " + specific.style
+        style += "\nGeneral style: " + profile.style
     source = specific if specific and (specific.examples or specific.pairs) else profile
     # Deterministic fixed budget, shared across standalone and paired examples.
     budget, examples, pairs = 8000, [], []
