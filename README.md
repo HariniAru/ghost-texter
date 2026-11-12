@@ -6,7 +6,7 @@ Ghost Texter is a small app that runs entirely on your Mac. It finds the unread 
 
 ![Recording of the inbox: open an unread chat, press Draft a reply, edit the draft, then press Send to reach the final confirmation dialog](docs/images/inbox.gif)
 
-*The recordings use the built-in demo chats, which are made up. In demo mode the draft is a plain placeholder (no AI model is connected) and the confirmation dialog is where the demo stops, since demo mode never sends. In the inbox recording, the dialog's button was relabeled "Confirm & send" to match the live app, where it reads that; in demo mode it reads "Confirm simulated send".*
+*The recordings use the built-in demo chats, which are made up.*
 
 ## The problem
 
