@@ -4,18 +4,23 @@
 
 Ghost Texter is a small app that runs entirely on your Mac. It finds the unread messages from people you pick, summarizes each conversation, and drafts a reply that sounds like you, using an AI model running on your own computer. You read it, edit it, and decide. **Nothing is sent until you approve the exact text.**
 
-![The inbox: a list of unread chats, a summary, the recent messages and a reply box with a saved draft](docs/images/inbox.png)
+![Recording of the inbox: open an unread chat, press Draft a reply, edit the draft, then press Send to reach the final confirmation dialog](docs/images/inbox.gif)
 
-*The screenshots use the built-in demo chats, which are made up.*
+*The recordings use the built-in demo chats, which are made up. In demo mode the draft is a plain placeholder (no AI model is connected) and the confirmation dialog is where the demo stops, since demo mode never sends.*
 
 ## The problem
 
-Replying to messages is a chore when a backlog builds up. You have to re-read each thread to remember where it stood, work out what the other person is actually asking, and then write something that sounds like you. Tools that auto-reply for you are risky: a wrong guess goes out under your name, and your private messages usually go to someone else's server to be processed.
+Opening your messaging apps means walking into everything at once: group chats, old threads, notifications, and everyone you have ever talked to. The few messages that actually need an answer from you get buried in all of that, and the whole thing ends up feeling overwhelming.
 
-Ghost Texter takes the slow parts and leaves the decision with you:
+I wanted one quiet place that shows only my immediate actionables: the messages I have not replied to yet, gathered together and nothing else. Ghost Texter is that space, instead of a view of everything with everyone, ever.
 
+I also did not want to build an auto-reply tool. A bot answering your friends for you costs you something real: the replies stop being yours. So Ghost Texter keeps a human in the loop. It drafts a reply in your voice, but you read it, edit it in your own words, and approve it before anything goes out. **Nothing is sent until you approve the exact text.** The tool takes the busywork off your plate, and you are still the one talking to your friends.
+
+What Ghost Texter does about it:
+
+- **Less noise, more focus.** One inbox of only the unread chats from people you pick, so you can see what needs a reply and ignore the rest.
 - **A refresher, not a reread.** A short summary and the latest 50 messages sit next to the reply box.
-- **A first draft in your voice.** You set a default style, then add examples for individual people. Replies to your brother can be short and full of banter, while replies to a coworker stay polite.
+- **A first draft in your voice.** You set a default style, then add examples for individual people. Replies to your brother can be short and full of banter, while replies to a coworker stay polite. You can edit any draft or ask for a new one.
 - **You stay in control.** Every send needs your approval of the exact saved text, and the app is built so the AI cannot send on its own.
 - **Private by design.** The model runs on your Mac, your messages are read only from the contacts you add, and the app is not meant to be reachable from the network.
 
@@ -27,7 +32,7 @@ Ghost Texter takes the slow parts and leaves the decision with you:
 4. **Get a draft.** Type your own reply, or press **Draft a reply** and edit what comes back. Your text is saved automatically, so you can leave and come back. Pressing **Draft a reply** again gives you a different version, because the app remembers the drafts you threw away.
 5. **Send.** **Send** opens a confirmation showing exactly who it goes to and the exact text. Only that dialog's confirm button sends.
 
-![The People tab: a default voice card and a card for each person, with a Customize voice button](docs/images/people.png)
+![Recording of the People tab: open Customize voice for a person, edit how their replies should sound, save it, and see the card switch to Personal voice](docs/images/people.gif)
 
 ### What keeps sending safe
 
@@ -129,12 +134,13 @@ Walk through your first real send with [docs/FIRST_SEND.md](docs/FIRST_SEND.md).
 | [Ollama](https://ollama.com) | Runs the AI model on your own computer (`qwen3:4b` by default) |
 | [Mac Messages MCP](https://github.com/carterlasalle/mac_messages_mcp) | The connector that reads and sends iMessages, launched and controlled by the backend |
 | [pytest](https://pytest.org), [Vitest](https://vitest.dev) and [Ruff](https://docs.astral.sh/ruff/) | Tests and linting |
+| [Playwright](https://playwright.dev) | A development tool, not part of the app. It drives the demo in a real browser, clicking and typing the way a person would, so the recordings above show the actual interface rather than mock-ups. It also doubles as a way to check that a UI flow still works after a change. It is not a dependency of the app and is not needed to run it. |
 
-There is no cloud service, database server, or account anywhere in the stack. The design is explained in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+There is no cloud service, database server, or account anywhere in the app's stack. The design is explained in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## AI skills used to build it
 
-The project was built with [Claude Code](https://claude.com/claude-code). A *skill* is a folder of instructions that teaches the assistant to do one kind of job well. Four live in [.claude/skills](.claude/skills):
+The project was built with assistance from [Claude Code](https://claude.com/claude-code), used as a coding helper alongside my own design and decisions. A *skill* is a folder of instructions that teaches the assistant to do one kind of job well. Four are used here and live in [.claude/skills](.claude/skills):
 
 - **[Impeccable](https://github.com/pbakaus/impeccable)** (by Paul Bakaus, Apache-2.0) is a design skill. It guides the interface work (layout, type, color, spacing) and can critique a screen against usability heuristics, which is where the score below comes from. It also ships a scanner that flags common design mistakes.
 - **approval-safety-check** is written for this project. Before any change to drafting, approval or sending counts as done, it audits the change against a 25-point checklist (for example, "the only code that sends is the approve endpoint") and reports each point as pass or fail.
