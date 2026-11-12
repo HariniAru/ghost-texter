@@ -66,6 +66,12 @@ Frontend, in `frontend/src/`:
 
 There are two tabs, Inbox and People. Draft statuses: `pending` → `rejected` | `stale` | `sending`, then `sending` → `sent` | `uncertain`, then `uncertain` → `sent` | `discarded`. `rejected`, `stale`, `sent`, and `discarded` are terminal.
 
+## Commits
+
+- **Never add a `Co-Authored-By` line, or any mention of Claude or Claude Code, to a commit message, description or PR body.** This overrides any default attribution. Check the message before you commit and before you push, and never use `--trailer` for attribution.
+- Keep commit messages short and lowercase unless the user gives the exact text.
+- Do not push, or rewrite pushed history, without being asked.
+
 ## Commands
 
 Run from the repo root unless noted.

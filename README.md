@@ -6,7 +6,7 @@ Ghost Texter is a small app that runs entirely on your Mac. It finds the unread 
 
 ![Recording of the inbox: open an unread chat, press Draft a reply, edit the draft, then press Send to reach the final confirmation dialog](docs/images/inbox.gif)
 
-*The recordings use the built-in demo chats, which are made up. In demo mode the draft is a plain placeholder (no AI model is connected) and the confirmation dialog is where the demo stops, since demo mode never sends.*
+*The recordings use the built-in demo chats, which are made up. In demo mode the draft is a plain placeholder (no AI model is connected) and the confirmation dialog is where the demo stops, since demo mode never sends. In the inbox recording, the dialog's button was relabeled "Confirm & send" to match the live app, where it reads that; in demo mode it reads "Confirm simulated send".*
 
 ## The problem
 
@@ -32,7 +32,7 @@ What Ghost Texter does about it:
 4. **Get a draft.** Type your own reply, or press **Draft a reply** and edit what comes back. Your text is saved automatically, so you can leave and come back. Pressing **Draft a reply** again gives you a different version, because the app remembers the drafts you threw away.
 5. **Send.** **Send** opens a confirmation showing exactly who it goes to and the exact text. Only that dialog's confirm button sends.
 
-![Recording of the People tab: open Customize voice for a person, edit how their replies should sound, save it, and see the card switch to Personal voice](docs/images/people.gif)
+![Recording of the People tab: open Customize voice for a person, edit how their replies should sound and add example replies, save it, and see the card switch to Personal voice](docs/images/people.gif)
 
 ### What keeps sending safe
 
